@@ -48,6 +48,25 @@ input, select { font: inherit; color: var(--text); background: var(--bg-field); 
 .tool-card .hint { margin: 0; color: var(--text-2); font-size: 12px; }
 .tool-card-body { display: grid; gap: 6px; }
 .tool-card-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+.problems-panel { position: absolute; right: 336px; bottom: 72px; width: 340px; max-height: 60vh; display: grid; grid-template-rows: auto 1fr; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-l); box-shadow: 0 4px 20px rgba(0,0,0,.4); z-index: 9; overflow: hidden; }
+.problems-panel.ok { background: color-mix(in srgb, var(--ok) 10%, var(--bg-panel)); }
+.problems-panel header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.problems-panel .empty { padding: 12px; color: var(--text-3); margin: 0; }
+.problems-panel .btn.small { padding: 4px 10px; font-size: 12px; }
+.issue-row { padding: 10px 12px; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
+.issue-row:last-child { border-bottom: 0; }
+.issue-row .issue-main { display: flex; align-items: baseline; gap: 8px; background: none; border: 0; text-align: left; color: var(--text); cursor: pointer; padding: 0; width: 100%; }
+.issue-row .issue-main:hover { color: var(--accent); }
+.issue-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.issue-row.sev-error .dot { background: var(--error); }
+.issue-row.sev-warning .dot { background: var(--warn); }
+.issue-row.sev-info .dot { background: var(--text-3); }
+.issue-row .msg { flex: 1; }
+.issue-row .also { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.issue-row .proposals { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.issue-row .proposals li { display: inline-flex; align-items: center; gap: 4px; }
+.chip-s.rec { font-size: 10px; padding: 1px 6px; border-radius: var(--radius-s); background: rgba(52, 120, 246, .18); color: var(--accent); }
 .panel { background: var(--bg-panel); overflow: auto; min-height: 0; }
 .panel.left { border-right: 1px solid var(--border); }
 .panel.right { border-left: 1px solid var(--border); }

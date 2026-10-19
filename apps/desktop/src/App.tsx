@@ -11,6 +11,7 @@ import { StartScreen } from "./components/StartScreen";
 import { ImportReportScreen } from "./components/ImportReportScreen";
 import { ToolStrip, type Tool } from "./components/ToolStrip";
 import { ToolCard } from "./components/ToolCard";
+import { ProblemsPanel } from "./components/ProblemsPanel";
 import { CamCanvas } from "./canvas/CamCanvas";
 import { useT } from "./i18n";
 
@@ -90,6 +91,7 @@ export function App() {
             )}
           </div>
           <PropertiesPanel op={op} row={d.row} />
+          <ProblemsPanel issues={d.issues} mode={state.project.mode} />
         </div>
       ) : (
         <div className="placeholder" style={{ background: "var(--bg-panel)" }}>{t("placeholder.notYet")}</div>
