@@ -77,8 +77,9 @@ function SvgPreview({ contours, layerMap }: { contours: Contour[]; layerMap: Rec
   const { pathD, viewBox } = useMemo(() => buildPreview(contours), [contours]);
   return (
     <svg className="import-preview" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
-      {/* Flip Y so math up → screen up */}
-      <g transform={`matrix(1 0 0 -1 0 ${viewBox.split(" ")[1]!} )`}>
+      {/* Flip Y so math up → screen up. Pivot = 2·minY + height so the flipped
+          content stays inside the viewBox. */}
+      <g transform={`matrix(1 0 0 -1 0 ${vbFlipPivot(viewBox)})`}>
         {contours.map((c, i) => {
           const role = layerMap[c.layer ?? "0"] ?? "cut";
           const colour =
@@ -96,6 +97,11 @@ function SvgPreview({ contours, layerMap }: { contours: Contour[]; layerMap: Rec
 function viewBoxStroke(vb: string): number {
   const parts = vb.split(" ").map(Number);
   return Math.max(0.3, Math.min(parts[2]!, parts[3]!) / 400);
+}
+
+function vbFlipPivot(vb: string): number {
+  const [, minY, , h] = vb.split(" ").map(Number) as [number, number, number, number];
+  return 2 * minY + h;
 }
 
 function buildPreview(contours: Contour[]): { pathD: (c: Contour) => string; viewBox: string } {
