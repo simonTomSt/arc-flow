@@ -1,0 +1,39 @@
+{
+  "id": "grbl",
+  "name": "GRBL 1.1",
+  "controller": "GRBL",
+  "description": "GRBL 1.1 (e.g. MKS DLC32) with the arc on a relay driven by M3/M5. GRBL has no G41/G42, so ArcFlow offsets the geometry itself. Laser mode must be OFF ($32=0) or M3 will only fire while moving.",
+  "unverified": ["pierce"],
+  "format": {
+    "decimals": 3,
+    "lineNumbers": false,
+    "extension": ".nc",
+    "newline": "\n",
+    "modalFeed": true,
+    "asciiOnly": true,
+    "splitFullCircles": true
+  },
+  "capabilities": { "compensation": false, "arcs": "IJ-relative" },
+  "blocks": {
+    "programStart": ["(ArcFlow - {PROJECT} - {MATERIAL} {THICKNESS}mm {CURRENT}A)", "(requires $32=0 laser mode off)", "G21 G90 G17 G94", { "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
+    "pierce": [
+      "G00 X{X} Y{Y}",
+      { "when": "heights", "line": "G00 Z{PIERCE_HEIGHT}" },
+      "M03 S1000",
+      "G04 P{PIERCE_DELAY}",
+      { "when": "heights", "line": "G01 Z{CUT_HEIGHT} F{F_Z}" }
+    ],
+    "thcOn": [],
+    "thcOff": [],
+    "compLeftPrefix": "",
+    "compRightPrefix": "",
+    "compOff": [],
+    "cut": ["G01 X{X} Y{Y} {F}"],
+    "arcCW": ["G02 X{X} Y{Y} I{I} J{J} {F}"],
+    "arcCCW": ["G03 X{X} Y{Y} I{I} J{J} {F}"],
+    "cutEnd": ["M05"],
+    "afterCut": [{ "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
+    "programEnd": ["G00 X0 Y0", "M30"]
+  },
+  "checks": { "pairs": [{ "open": "M03", "close": "M05" }] }
+}

@@ -1,0 +1,83 @@
+/*
+ * ArcFlow design tokens, taken 1:1 from the design (docs/design/20-design-system.md).
+ * Dark is the default. Light and Ultra dark are full remaps, never per-component overrides.
+ */
+:root,
+[data-theme="dark"] {
+  --bg-app: #111113;
+  --bg-canvas: #000000;
+  --bg-panel: #1e1e20;
+  --bg-panel-2: #232325;
+  --bg-raised: #2c2c2e;
+  --bg-field: #323234;
+  --bg-hover: #3a3a3c;
+  --bg-control: #444447;
+  --border: #333336;
+  --border-strong: #545458;
+  --text: #f2f2f7;
+  --text-2: #d1d1d6;
+  --text-3: #8e8e93;
+  --text-disabled: #545458;
+
+  --accent: #3478f6;
+  --accent-hover: #5a93f8;
+  --on-accent: #ffffff;
+  --ok: #30b860;
+  --warn: #f2a93b;
+  --error: #ff5a4e;
+
+  /* CAM canvas semantics */
+  --cam-cut: #5b9bff;
+  --cam-open: #bf7bff;
+  --cam-lead: #8fb8ff;
+  --cam-rapid: #7c7c82;
+  --cam-pierce: #ff5a4e;
+  --cam-mark: #30b860;
+  --cam-sheet: #1c1c1e;
+  --cam-grid: rgba(255, 255, 255, 0.035);
+  --cam-selected: #ffffff;
+
+  --radius-s: 6px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+  --hit: 40px;
+  --font-ui: "SF Pro Text", "Segoe UI Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "Source Code Pro", ui-monospace, monospace;
+  --font-brand: "SF Pro Rounded", Nunito, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg-app: #b9bdc3;
+  --bg-canvas: #c9cdd2;
+  --bg-panel: #e4e6e9;
+  --bg-panel-2: #eef0f2;
+  --bg-raised: #ffffff;
+  --bg-field: #f3f4f6;
+  --bg-hover: #e6e8eb;
+  --bg-control: #ffffff;
+  --border: #dde0e4;
+  --border-strong: #bfc3c9;
+  --text: #1c1f24;
+  --text-2: #3a3f47;
+  --text-3: #6b7079;
+  --cam-sheet: #f2f3f5;
+  --cam-grid: rgba(0, 0, 0, 0.035);
+  --cam-selected: #1c1f24;
+}
+
+[data-theme="ultra-dark"] {
+  --bg-app: #060607;
+  --bg-panel: #0d0e10;
+  --bg-panel-2: #111214;
+  --bg-raised: #18191c;
+  --bg-field: #1e1f23;
+  --bg-hover: #24262a;
+  --bg-control: #30333a;
+  --border: #1c1d20;
+  --border-strong: #3b3e45;
+  --cam-sheet: #15161a;
+}
+
+[data-touch="true"] {
+  --hit: 48px;
+}

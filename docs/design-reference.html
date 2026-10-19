@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArcFlow Design Reference</title>
+<style>
+/* Same tokens as apps/desktop/src/styles/tokens.css. Dark is the product default. */
+:root, [data-theme="dark"] {
+  --bg-app:#111113; --bg-canvas:#000000; --bg-panel:#1E1E20; --bg-panel-2:#232325; --bg-raised:#2C2C2E;
+  --bg-field:#323234; --bg-hover:#3A3A3C; --bg-control:#444447; --border:#333336; --border-strong:#545458;
+  --text:#F2F2F7; --text-2:#D1D1D6; --text-3:#8E8E93;
+  --accent:#3478F6; --ok:#30B860; --warn:#F2A93B; --error:#FF5A4E;
+  --cam-cut:#5B9BFF; --cam-open:#BF7BFF; --cam-lead:#8FB8FF; --cam-rapid:#7C7C82; --cam-sheet:#1C1C1E; --cam-grid:rgba(255,255,255,.05);
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg-app:#B9BDC3; --bg-canvas:#C9CDD2; --bg-panel:#E4E6E9; --bg-panel-2:#EEF0F2; --bg-raised:#FFFFFF;
+  --bg-field:#F3F4F6; --bg-hover:#E6E8EB; --bg-control:#FFFFFF; --border:#DDE0E4; --border-strong:#BFC3C9;
+  --text:#1C1F24; --text-2:#3A3F47; --text-3:#6B7079; --cam-sheet:#F2F3F5; --cam-grid:rgba(0,0,0,.05);
+  color-scheme: light;
+}
+[data-theme="ultra"] {
+  --bg-app:#060607; --bg-panel:#0D0E10; --bg-panel-2:#111214; --bg-raised:#18191C; --bg-field:#1E1F23;
+  --bg-hover:#24262A; --bg-control:#30333A; --border:#1C1D20; --border-strong:#3B3E45; --cam-sheet:#15161A;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+pre, table { max-width: 100%; }
+body { margin:0; background:var(--bg-app); color:var(--text); font:15px/1.5 "SF Pro Text","Segoe UI Variable",system-ui,-apple-system,sans-serif; font-variant-numeric:tabular-nums; }
+a { color:var(--accent); }
+.wrap { max-width:1180px; margin:0 auto; padding:0 16px 80px; }
+header.top { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg-app) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+header.top .wrap { display:flex; align-items:center; gap:12px; padding-top:10px; padding-bottom:10px; flex-wrap:wrap; }
+.logo { width:22px; height:22px; border-radius:6px; background:var(--accent); display:grid; place-items:center; flex:none; }
+.logo i { width:8px; height:8px; border:1.7px solid #fff; transform:rotate(45deg); }
+nav { display:flex; gap:4px; flex-wrap:wrap; margin-left:auto; }
+nav a { color:var(--text-2); text-decoration:none; font-size:13px; padding:4px 8px; border-radius:6px; }
+nav a:hover { background:var(--bg-hover); }
+.seg { display:inline-flex; background:var(--bg-field); border-radius:8px; padding:2px; }
+.seg button { border:0; background:none; color:var(--text-2); font:inherit; font-size:13px; padding:3px 10px; border-radius:6px; cursor:pointer; }
+.seg button[aria-pressed="true"] { background:var(--bg-control); color:var(--text); }
+h1 { font-size:34px; line-height:1.15; margin:48px 0 8px; letter-spacing:-.01em; }
+h2 { font-size:22px; margin:56px 0 6px; }
+h3 { font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--text-3); margin:20px 0 8px; font-weight:600; }
+p.lead { color:var(--text-2); font-size:17px; max-width:760px; margin:0; }
+.muted { color:var(--text-3); }
+.grid { display:grid; gap:12px; }
+.g2 { grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); }
+.g3 { grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); }
+.g4 { grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); }
+.card { background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:16px; min-width:0; }
+.card h4 { margin:0 0 6px; font-size:15px; }
+.card p { margin:0; color:var(--text-2); font-size:14px; }
+.flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:18px; }
+.flow span { background:var(--bg-raised); border-radius:8px; padding:6px 10px; font-size:13px; }
+.flow b { color:var(--text-3); font-weight:400; }
+.flow .hot { background:var(--accent); color:#fff; }
+.sw { display:flex; gap:10px; align-items:center; }
+.sw i { width:36px; height:36px; border-radius:8px; flex:none; border:1px solid var(--border); }
+.sw code { font-size:12px; color:var(--text-3); display:block; }
+code, pre { font-family:"Source Code Pro",ui-monospace,monospace; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+th { color:var(--text-3); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+.tablewrap { overflow-x:auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; }
+.tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px; background:var(--bg-field); color:var(--text-2); white-space:nowrap; }
+.tag.ok { background:color-mix(in srgb, var(--ok) 22%, transparent); color:var(--ok); }
+.tag.part { background:color-mix(in srgb, var(--warn) 22%, transparent); color:var(--warn); }
+.tag.no { background:var(--bg-field); color:var(--text-3); }
+kbd { font:12px "Source Code Pro",monospace; background:var(--bg-field); border:1px solid var(--border-strong); border-bottom-width:2px; border-radius:5px; padding:1px 6px; }
+
+/* App shell mock */
+.shell { background:var(--bg-canvas); border-radius:12px; overflow:hidden; border:1px solid var(--border); font-size:13px; }
+.shell .bar { display:flex; align-items:center; gap:8px; padding:0 10px; height:36px; white-space:nowrap; overflow:hidden; }
+.shell .bar2 { background:var(--bg-panel); border-bottom:1px solid var(--border); }
+.shell .btn { background:var(--accent); color:#fff; border-radius:7px; padding:3px 10px; }
+.shell .chip { background:var(--bg-field); border-radius:7px; padding:3px 9px; color:var(--text-2); }
+.shell .body { display:grid; grid-template-columns:170px 1fr 220px; min-height:330px; }
+.shell .col { background:var(--bg-panel); padding:10px; }
+.shell .col.l { border-right:1px solid var(--border); }
+.shell .col.r { border-left:1px solid var(--border); }
+.shell .row { display:flex; gap:6px; align-items:center; padding:4px 6px; border-radius:6px; color:var(--text-2); }
+.shell .row.sel { background:rgba(52,120,246,.22); color:var(--text); }
+.shell .row .m { margin-left:auto; color:var(--text-3); font-size:11px; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--cam-cut); flex:none; }
+.shell .foot { display:flex; gap:14px; padding:7px 10px; background:var(--bg-panel); border-top:1px solid var(--border); color:var(--text-2); }
+.shell svg { width:100%; height:100%; display:block; }
+.why { background:var(--bg-panel-2); border-radius:8px; padding:8px 10px; margin-top:8px; }
+.why ol { margin:0; padding-left:18px; color:var(--text-2); }
+.prop { display:flex; justify-content:space-between; gap:8px; padding:4px 0; color:var(--text-2); }
+.prop b { color:var(--text-3); font-weight:400; }
+.prop b.man { color:var(--text); }
+.prop b.man::after { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-left:6px; vertical-align:middle; }
+.restore { color:var(--accent); font-size:11px; text-align:right; }
+.problem { background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.problem .hd { display:flex; gap:10px; padding:12px 14px; background:rgba(52,120,246,.22); }
+.problem .opt { display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--border); }
+.problem .opt .t { flex:1; }
+.pill { font-size:11px; border-radius:99px; padding:1px 8px; background:var(--accent); color:#fff; height:fit-content; }
+pre.gcode { background:var(--bg-canvas); color:var(--text-2); border-radius:12px; padding:14px; overflow:auto; font-size:12.5px; line-height:1.6; margin:0; border:1px solid var(--border); }
+pre.gcode .c { color:var(--text-3); }
+pre.gcode .k { color:var(--cam-cut); }
+pre.gcode .w { color:var(--warn); }
+@media (max-width: 820px) {
+  .shell .body { grid-template-columns:1fr; }
+  .shell .col.l, .shell .col.r { display:none; }
+  h1 { font-size:28px; }
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="logo"><i></i></div><b>ArcFlow</b><span class="muted">Design reference</span>
+  <nav>
+    <a href="#flow">Flow</a><a href="#tokens">Tokens</a><a href="#cam">CAM colours</a><a href="#shell">Shell</a><a href="#patterns">Patterns</a><a href="#screens">Screens</a><a href="#keys">Keys</a><a href="#gcode">G-code</a>
+  </nav>
+  <div class="seg" role="group" aria-label="Theme">
+    <button data-t="dark" aria-pressed="true">Dark</button><button data-t="light" aria-pressed="false">Light</button><button data-t="ultra" aria-pressed="false">Ultra dark</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <h1>ArcFlow: plasma CAM that works like a synergic welder</h1>
+  <p class="lead">Offline summary of the design for whoever builds it. Pixel truth is the live design at <a href="https://claude.ai/artifact/UfHut5G4ZC6xxEBJCpacM1">claude.ai/artifact/UfHut5G4ZC6xxEBJCpacM1</a>. Tokens and rules here match <code>tokens.css</code> and <code>docs/design/*.md</code>.</p>
+
+  <section id="flow">
+    <h2>Main flow</h2>
+    <p class="muted">Drop a DXF, pick material, press Generuj. Every automatic decision has a reason and a one-click restore.</p>
+    <div class="flow">
+      <span>Upuść DXF</span><b>→</b><span>Raport importu</span><b>→</b><span>S235 · 4 mm · 45 A</span><b>→</b><span class="hot">Generuj</span><b>→</b><span>Ścieżki + Dlaczego?</span><b>→</b><span>Korekty</span><b>→</b><span>Symulacja</span><b>→</b><span>Walidacja</span><b>→</b><span>Zapisz G-code</span>
+    </div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="card"><h4>Synergic</h4><p>Everything automatic. You accept. Value = your override, otherwise auto.</p></div>
+      <div class="card"><h4>Assisted</h4><p>Automation proposes, you approve contour by contour. Problems panel with Zalecane options.</p></div>
+      <div class="card"><h4>Manual</h4><p>Automation off, like SheetCAM. Validation still warns and blocks errors.</p></div>
+    </div>
+  </section>
+
+  <section id="tokens">
+    <h2>Colour tokens</h2>
+    <p class="muted">Dark default. Switch the theme at the top to see the Light and Ultra dark remaps from the design.</p>
+    <h3>Surfaces</h3>
+    <div class="grid g4" id="sw-surf"></div>
+    <h3>Text and status</h3>
+    <div class="grid g4" id="sw-text"></div>
+    <h3>Type</h3>
+    <div class="grid g3">
+      <div class="card"><div style="font-size:17px;font-weight:600">Panel title 17 / 600</div><p>Body 14 px, tabular numbers: 1,52 mm · 2600 mm/min</p><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-top:6px;font-weight:600">Section header 11 caps</div></div>
+      <div class="card"><code style="font-size:13px">G41 G01 X120.00 Y-31.00 F2600</code><p style="margin-top:6px">Source Code Pro for G-code and numbers in previews.</p></div>
+      <div class="card"><p><span style="text-decoration:underline dotted var(--text-3);text-underline-offset:3px">Kerf</span> has a dotted underline because it has an extended tooltip.</p></div>
+    </div>
+  </section>
+
+  <section id="cam">
+    <h2>CAM canvas semantics</h2>
+    <p class="muted">Wspornik WS-02 after Generuj: 6 × Ø5 from the centre at 60 %, Ø30 with line+arc 8 mm, outline last.</p>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card" style="padding:0;overflow:hidden">
+        <svg viewBox="-12 -12 204 144" role="img" aria-label="Demo part with toolpaths">
+          <defs><pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="var(--cam-grid)" stroke-width=".3"/></pattern></defs>
+          <rect x="-12" y="-12" width="204" height="144" fill="var(--cam-sheet)"/><rect x="-12" y="-12" width="204" height="144" fill="url(#g)"/>
+          <path d="M-12 -12L14 16.5L80 16.5L146 16.5L146 98.5L80 98.5L14 98.5L80 63L80 125" fill="none" stroke="var(--cam-rapid)" stroke-width=".5" stroke-dasharray="2 1.5"/>
+          <rect x="0" y="0" width="160" height="110" rx="10" fill="none" stroke="var(--cam-cut)" stroke-width=".9"/>
+          <g fill="none" stroke="var(--cam-cut)" stroke-width=".8"><circle cx="14" cy="14" r="2.5"/><circle cx="80" cy="14" r="2.5"/><circle cx="146" cy="14" r="2.5"/><circle cx="14" cy="96" r="2.5"/><circle cx="80" cy="96" r="2.5"/><circle cx="146" cy="96" r="2.5"/><circle cx="80" cy="55" r="15"/></g>
+          <g stroke="var(--cam-lead)" stroke-width=".7" fill="none"><path d="M84 47V44A4 4 0 0 0 80 40"/><path d="M80 125V118A4 4 0 0 1 84 114"/></g>
+          <g fill="var(--error)"><circle cx="14" cy="16.5" r="1.2"/><circle cx="80" cy="16.5" r="1.2"/><circle cx="146" cy="16.5" r="1.2"/><circle cx="14" cy="98.5" r="1.2"/><circle cx="80" cy="98.5" r="1.2"/><circle cx="146" cy="98.5" r="1.2"/><circle cx="84" cy="47" r="1.2"/><circle cx="80" cy="125" r="1.2"/></g>
+          <g font-size="5" fill="var(--text)" font-family="system-ui"><text x="17" y="22">1</text><text x="83" y="22">2</text><text x="149" y="22">3</text><text x="87" y="51">7</text><text x="83" y="130">8</text></g>
+        </svg>
+      </div>
+      <div class="tablewrap"><table>
+        <tr><th>Element</th><th>Colour</th><th>Style</th></tr>
+        <tr><td>Closed contour</td><td><span class="sw"><i style="background:var(--cam-cut);width:16px;height:16px"></i>#5B9BFF</span></td><td>solid</td></tr>
+        <tr><td>Open contour</td><td><span class="sw"><i style="background:var(--cam-open);width:16px;height:16px"></i>#BF7BFF</span></td><td>solid</td></tr>
+        <tr><td>Lead-in / out</td><td><span class="sw"><i style="background:var(--cam-lead);width:16px;height:16px"></i>#8FB8FF</span></td><td>thin</td></tr>
+        <tr><td>Rapid</td><td><span class="sw"><i style="background:var(--cam-rapid);width:16px;height:16px"></i>#7C7C82</span></td><td>dashed</td></tr>
+        <tr><td>Pierce, error</td><td><span class="sw"><i style="background:var(--error);width:16px;height:16px"></i>#FF5A4E</span></td><td>dot + order number</td></tr>
+        <tr><td>Marking point, OK</td><td><span class="sw"><i style="background:var(--ok);width:16px;height:16px"></i>#30B860</span></td><td>dot</td></tr>
+        <tr><td>Warning</td><td><span class="sw"><i style="background:var(--warn);width:16px;height:16px"></i>#F2A93B</span></td><td>triangle</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="shell">
+    <h2>Application shell</h2>
+    <p class="muted">Same frame on every project screen: menu bar, workspaces + preset chip + mode + Generuj, browser, canvas, properties, order bar.</p>
+    <div class="shell" style="margin-top:12px">
+      <div class="bar"><div class="logo" style="width:18px;height:18px"><i></i></div><span style="color:var(--text)">Kołnierze_DN150 ▾</span><span class="muted">Plik · Edycja · Widok · Pomoc</span><span style="flex:1"></span><span class="btn">Eksportuj</span></div>
+      <div class="bar bar2"><span class="chip" style="background:var(--bg-control);color:var(--text)">CAM</span><span class="muted">Szkic · Nesting · Symulacja · Eksport</span><span style="flex:1"></span><span class="chip">Toploong · S235 · 4 mm · 45 A ▾</span><span class="chip" style="color:var(--text)">Synergic</span><span class="btn">Generuj</span></div>
+      <div class="body">
+        <div class="col l">
+          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:.06em">ELEMENTY</div>
+          <div class="row">▼ Arkusz 1<span class="m">2500×1250</span></div>
+          <div class="row" style="padding-left:16px">▼ Wspornik A</div>
+          <div class="row sel" style="padding-left:28px"><span class="dot"></span>Otwór Ø5<span class="m">#15</span></div>
+          <div class="row" style="padding-left:28px"><span class="dot"></span>Otwór Ø30<span class="m">#21</span></div>
+          <div class="row" style="padding-left:28px"><span class="dot"></span>Obrys 160×110<span class="m">#22</span></div>
+          <div class="row"><span class="dot" style="background:var(--cam-open)"></span>Linia resztki<span class="m" style="color:var(--warn)">▲ #37</span></div>
+        </div>
+        <div style="background:var(--cam-sheet);display:grid;place-items:center;color:var(--text-3)">canvas</div>
+        <div class="col r">
+          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:.06em">WŁAŚCIWOŚCI</div>
+          <div style="font-weight:600;margin:4px 0">Otwór Ø5 <span class="muted">#15</span></div>
+          <div class="prop">Lead-in <b>Ze środka</b></div>
+          <div class="prop">Overcut <b class="man">0,80 mm</b></div>
+          <div class="restore">Zmienione ręcznie z 0,00 mm · przywróć auto</div>
+          <div class="prop">Kerf <b>1,52 mm z tabeli</b></div>
+          <div class="prop">Prędkość <b>60 % · 1560</b></div>
+          <div class="why"><div class="muted" style="font-size:11px;font-weight:600">DLACZEGO?</div><ol><li>Ø5 &lt; 2,5 × grubość (10 mm) → wejście ze środka</li><li>Mały otwór → prędkość 60 %</li><li>Kontur 15,7 mm &lt; 50 mm → THC wyłączony</li></ol></div>
+        </div>
+      </div>
+      <div class="foot">Kolejność cięcia · <b>37</b> cięć · <b>6:41</b> · <b>18,4 m</b><span style="flex:1"></span><span style="color:var(--error)">● 1 błąd</span><span style="color:var(--warn)">▲ 2 uwagi</span></div>
+    </div>
+  </section>
+
+  <section id="patterns">
+    <h2>Interaction patterns</h2>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="problem">
+        <div class="hd"><span style="color:var(--error)">●</span><div><b>Lead-in wychodzi poza otwór</b><div class="muted" style="font-size:13px">Otwór Ø30 · #21 · Wspornik A</div><div style="font-size:14px;color:var(--text-2)">40 mm w otworze Ø30: przebicie wypada 10 mm na części. Maks. 25,5 mm.</div></div></div>
+        <div class="opt"><div class="t"><b>Jak automat: linia + łuk 8 mm</b><div class="muted" style="font-size:13px">Przebicie 7 mm od ściany.</div></div><span class="pill">Zalecane</span></div>
+        <div class="opt"><div class="t"><b>Najdłuższy bezpieczny: 25,5 mm</b><div class="muted" style="font-size:13px">Twoja linia, skrócona.</div></div></div>
+        <div class="opt muted" style="font-size:13px">Zastosuj · Pokaż · Zostaw · ☐ Też w 3 podobnych otworach</div>
+      </div>
+      <div class="grid" style="gap:12px">
+        <div class="card"><h4>Tool card</h4><p>Title with shortcut (<kbd>L</kbd> Lead-in), one-line hint, fields, <kbd>Esc</kbd> Anuluj / OK <kbd>↵</kbd>. Recomputes live while you drag the start point.</p></div>
+        <div class="card"><h4>Auto vs manual</h4><p>Grey value = automatic. White + blue dot = manual, with "Zmienione ręcznie z X · przywróć auto".</p></div>
+        <div class="card"><h4>Impact line</h4><p>After a change: "Wpływ: +4 pętle · +75 mm cięcia · +1,2 s" or "−2 przebicia · −1,8 s".</p></div>
+        <div class="card"><h4>Tooltips</h4><p>After 0,6 s (long-press on touch). Title, one sentence, 2–4 diagrams in CAM colours, footer with this project's value and its source.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <h2>Screens</h2>
+    <p class="muted">17 frames in the design. Status shows what this starter kit already implements.</p>
+    <div class="grid g3" id="screens-grid" style="margin-top:12px"></div>
+  </section>
+
+  <section id="keys">
+    <h2>Keyboard</h2>
+    <div class="tablewrap" style="margin-top:12px"><table>
+      <tr><th>Key</th><th>Action</th><th>Screen</th></tr>
+      <tr><td><kbd>L</kbd> <kbd>C</kbd> <kbd>R</kbd> <kbd>D</kbd> <kbd>T</kbd></td><td>Sketch: line, circle, rectangle, dimension, trim</td><td>E</td></tr>
+      <tr><td><kbd>L</kbd></td><td>CAM: lead-in tool</td><td>C</td></tr>
+      <tr><td><kbd>K</kbd> <kbd>P</kbd></td><td>Corners, marking</td><td>K, P</td></tr>
+      <tr><td><kbd>W</kbd> <kbd>B</kbd> <kbd>J</kbd> <kbd>O</kbd> <kbd>H</kbd></td><td>Common line, bridges, rapids, thermal order, chain</td><td>X1–X6</td></tr>
+      <tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></td><td>Rotate part ±90°</td><td>R</td></tr>
+      <tr><td><kbd>Tab</kbd> · <kbd>↵</kbd></td><td>Preview proposal · apply</td><td>AS, M</td></tr>
+      <tr><td><kbd>Space</kbd> · <kbd>←</kbd><kbd>→</kbd> · <kbd>1</kbd>–<kbd>4</kbd></td><td>Play/pause, previous/next cut, speed</td><td>S</td></tr>
+    </table></div>
+  </section>
+
+  <section id="gcode">
+    <h2>G-code the starter writes</h2>
+    <p class="muted">F2100K post on the demo part (Ø30 hole). Codes come from the design and are <b style="color:var(--warn)">not yet verified</b> on the controller.</p>
+<pre class="gcode" style="margin-top:12px"><span class="c">(ArcFlow - S235 4mm 45A)</span>
+G21 G90
+<span class="c">…</span>
+G00 X104.00 Y-68.00      <span class="c">rapid to pierce, 7 mm from the hole wall</span>
+G00 Z3.80                <span class="c">pierce height</span>
+<span class="k">M07</span>                      <span class="c">arc on</span>
+G04 P0.5                 <span class="c">pierce delay</span>
+G01 Z1.50 F300           <span class="c">cut height</span>
+<span class="w">M50</span>                      <span class="c">THC on (unverified)</span>
+<span class="k">G41</span> G01 X104.00 Y-64.00 F2600   <span class="c">lead line, compensation left</span>
+G03 X100.00 Y-60.00 I-4.00 J0.00 <span class="c">lead arc, tangent</span>
+G03 X100.00 Y-90.00 I0.00 J-15.00
+G03 X100.00 Y-60.00 I0.00 J15.00 <span class="c">hole Ø30, CCW, split in halves</span>
+<span class="k">M08</span>                      <span class="c">arc off</span>
+G40
+G00 Z10.00</pre>
+  </section>
+</main>
+
+<script>
+const screens = [
+  ["A","Ekran startowy","Drop DXF/SVG, recent projects, machine cards, default material, mode, touch, language.","no"],
+  ["E","Szkicownik","Circle tool typing Ø30; sketch state 'Niedookreślony · 2 stopnie swobody'.","no"],
+  ["C","CAM po Generuj","Lead-in tool on Ø5 #15, draggable start, overcut override, Dlaczego? with 3 reasons.","part"],
+  ["AS","Assisted","Manual 40 mm lead in Ø30 → Problems panel with Zalecane proposal and bulk apply.","part"],
+  ["M","Manual","Automation off, validation still active, proposals reversed.","part"],
+  ["K","Narożniki","Sharp, rounded or loop; loop Ø 4 × kerf; threshold 135°; fallback slowdown 70 %.","no"],
+  ["R","Pozycja części","Rotate 0/45/90/180/270, mirror, recalc operations, sheet zero point + offset.","no"],
+  ["X1–X8","Funkcje zaawansowane","Common line, micro-bridges, remnants, rapids, thermal order, chain, quick quote, operator report.","no"],
+  ["S","Symulacja","Playback, kerf trail, speed heatmap, checks for rapids over cut parts.","no"],
+  ["T","Podpowiedzi","Extended tooltips with diagrams and project values.","no"],
+  ["P","Punktowanie","Marking points for holes ≤ Ø6, scriber offset 62 mm, before cutting.","part"],
+  ["N","Nesting","Quantities, sheet or remnant, three proposed layouts, spacing 2 × t.","no"],
+  ["F","Tabele cięcia","Chart table per material/nozzle; kerf calibration wizard → 1,66 mm.","part"],
+  ["I","Walidacja i eksport","Errors block saving; post, 8-char file name, live G-code preview.","ok"],
+  ["L1","Biblioteka narzędzi","Nozzles with default kerf; chart kerf has priority.","no"],
+  ["L2","Profile maszyn","THC, heights in program, IHS, punch offset, post, resulting G-code.","part"],
+  ["L3","Postprocesory","Event blocks with clickable variables, preview highlighting, checks.","part"]
+];
+const label = { ok:"in starter", part:"partly in starter", no:"not started" };
+document.getElementById("screens-grid").innerHTML = screens.map(([id,n,d,s]) =>
+  `<div class="card"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span class="tag" style="background:var(--accent);color:#fff">${id}</span><h4 style="margin:0">${n}</h4></div><p>${d}</p><div style="margin-top:8px"><span class="tag ${s}">${label[s]}</span></div></div>`).join("");
+
+const surf = [["--bg-app","window"],["--bg-canvas","canvas"],["--bg-panel","panels"],["--bg-panel-2","nested"],["--bg-raised","cards, buttons"],["--bg-field","fields"],["--bg-hover","hover"],["--bg-control","selected segment"],["--border","borders"]];
+const txt = [["--text","primary, manual"],["--text-2","secondary"],["--text-3","captions, auto"],["--accent","accent"],["--ok","ok"],["--warn","warning"],["--error","error, pierce"]];
+function swatches(list, el) {
+  const cs = getComputedStyle(document.documentElement);
+  document.getElementById(el).innerHTML = list.map(([v,u]) => `<div class="sw"><i style="background:var(${v})"></i><div><div>${u}</div><code>${v} ${cs.getPropertyValue(v).trim()}</code></div></div>`).join("");
+}
+function render() { swatches(surf,"sw-surf"); swatches(txt,"sw-text"); }
+document.querySelectorAll("[data-t]").forEach(b => b.addEventListener("click", () => {
+  document.documentElement.dataset.theme = b.dataset.t;
+  document.querySelectorAll("[data-t]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  try { localStorage.setItem("af-theme", b.dataset.t); } catch (e) {}
+  render();
+}));
+try { const t = localStorage.getItem("af-theme"); if (t) document.querySelector(`[data-t="${t}"]`)?.click(); } catch (e) {}
+render();
+</script>
+</body>
+</html>
