@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import {
   applyLayerRoles,
+  bbox,
   buildToolpath,
   defaultLayerMap,
   demoProject,
@@ -170,10 +171,7 @@ function reducer(s: UiState, a: Action): UiState {
 function sheetFillOffset(existing: Project["contours"], sheetWidth: number): number {
   if (existing.length === 0) return 0;
   let maxX = 0;
-  for (const c of existing) for (const s of c.segments) {
-    maxX = Math.max(maxX, s.a.x, s.b.x);
-    if (s.kind === "arc") maxX = Math.max(maxX, s.c.x + 50);
-  }
+  for (const c of existing) maxX = Math.max(maxX, bbox(c).maxX);
   // Leave a 10 mm gap; wrap back if we would run past the sheet.
   const shift = maxX + 10;
   return shift < sheetWidth ? shift : 10;
