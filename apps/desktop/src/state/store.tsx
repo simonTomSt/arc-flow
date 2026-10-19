@@ -18,6 +18,7 @@ import {
   grblTable,
   translateContour,
   validate,
+  type Issue,
   type MachineProfile,
   type Mode,
   type OperationOverrides,
@@ -84,7 +85,8 @@ export type Action =
   | { type: "showExport"; show: boolean }
   | { type: "noteRecent"; entry: RecentProject }
   | { type: "clearRecent" }
-  | { type: "noteExport"; path: string };
+  | { type: "noteExport"; path: string }
+  | { type: "applyFixes"; issues: Issue[] };
 
 export const machines: MachineProfile[] = [toploong1325, grblTable];
 
@@ -194,6 +196,20 @@ function reducer(s: UiState, a: Action): UiState {
       return { ...s, recent: [] };
     case "noteExport":
       return { ...s, lastExportPath: a.path };
+    case "applyFixes": {
+      const overrides = { ...s.project.overrides };
+      for (const i of a.issues) {
+        if (!i.fix || !i.contourId) continue;
+        const prev = overrides[i.contourId] ?? {};
+        if (i.fix.code === "MARK_INSTEAD") overrides[i.contourId] = { ...prev, action: "mark" };
+        else if (i.fix.code === "SHORTEN_LEAD" && typeof i.fix.params.len === "number") {
+          const current = prev.leadIn ?? { type: "line" as const, lengthMm: i.fix.params.len, angleDeg: 0 };
+          overrides[i.contourId] = { ...prev, leadIn: { ...current, lengthMm: i.fix.params.len } };
+        }
+        // JOIN_GAP needs geometry work — skipped here, button marks it unsupported.
+      }
+      return { ...s, project: { ...s.project, overrides } };
+    }
   }
 }
 
