@@ -33,6 +33,21 @@ input, select { font: inherit; color: var(--text); background: var(--bg-field); 
 .chip b { color: var(--text); font-weight: 500; }
 
 .main { display: grid; grid-template-columns: 280px 1fr 320px; min-height: 0; }
+.main.cam { grid-template-columns: 280px 44px 1fr 320px; }
+
+.tool-strip { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 4px; border-right: 1px solid var(--border); background: var(--bg-panel); }
+.tool-strip .tool { display: grid; grid-template-rows: auto auto; justify-items: center; gap: 2px; padding: 6px 4px; background: transparent; border: 1px solid transparent; border-radius: var(--radius-s); color: var(--text-2); cursor: pointer; }
+.tool-strip .tool:hover { background: var(--bg-field); color: var(--text); }
+.tool-strip .tool[aria-pressed="true"] { background: rgba(52, 120, 246, .14); border-color: var(--accent); color: var(--text); }
+.tool-strip .tool .icon { font-size: 16px; line-height: 1; }
+.tool-strip .tool .key { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); }
+
+.tool-card { position: absolute; top: 12px; left: 12px; z-index: 10; min-width: 240px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-l); padding: 10px 12px; display: grid; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.tool-card-head { display: flex; align-items: baseline; gap: 6px; }
+.tool-card-head .shortcut { color: var(--text-3); font-family: var(--font-mono); font-size: 11px; }
+.tool-card .hint { margin: 0; color: var(--text-2); font-size: 12px; }
+.tool-card-body { display: grid; gap: 6px; }
+.tool-card-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .panel { background: var(--bg-panel); overflow: auto; min-height: 0; }
 .panel.left { border-right: 1px solid var(--border); }
 .panel.right { border-left: 1px solid var(--border); }
@@ -53,7 +68,12 @@ input, select { font: inherit; color: var(--text); background: var(--bg-field); 
 .prop label.tip { text-decoration: underline dotted var(--text-3); text-underline-offset: 3px; }
 .prop .auto { color: var(--text-3); }
 .prop .manual { color: var(--text); }
-.restore { background: none; border: 0; color: var(--accent); padding: 0; font-size: 12px; }
+.restore { background: none; border: 0; color: var(--accent); padding: 0; font-size: 12px; cursor: pointer; }
+.prop-section { padding: 10px 14px 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+.prop-head { padding: 0 14px 8px; font-size: 17px; font-weight: 500; display: flex; align-items: baseline; gap: 6px; }
+.prop-head .order { color: var(--text-3); font-weight: 400; margin-left: auto; }
+.prop-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.prop-sub .restore { font-size: 11px; }
 
 .why { margin: 8px 14px 14px; padding: 10px 12px; background: var(--bg-panel-2); border-radius: var(--radius-m); }
 .why ol { margin: 0; padding: 0; list-style: none; counter-reset: why; }
