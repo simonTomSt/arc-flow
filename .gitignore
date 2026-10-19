@@ -5,3 +5,5 @@ target/
 .DS_Store
 apps/desktop/src-tauri/gen/
 coverage/
+apps/desktop/test-results/
+apps/desktop/playwright-report/
