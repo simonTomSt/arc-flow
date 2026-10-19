@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import {
   applyLayerRoles,
   bbox,
@@ -36,6 +36,15 @@ export interface PendingImport {
   layerMap: Record<string, LayerRole>;
 }
 
+/** One row in the Start screen's "Ostatnie projekty" list. */
+export interface RecentProject {
+  path: string;
+  name: string;
+  openedAt: string;
+  /** "Wyeksportowano" or "N uwag" chip (design A). */
+  status?: string;
+}
+
 export interface UiState {
   project: Project;
   workspace: Workspace;
@@ -50,6 +59,10 @@ export interface UiState {
   importSeq: number;
   /** Set when an import needs operator review (design: Import report). */
   pendingImport: PendingImport | null;
+  /** Start-screen recent-projects list; persisted in localStorage. */
+  recent: RecentProject[];
+  /** Absolute path of the last G-code export; persisted in localStorage. */
+  lastExportPath: string | null;
 }
 
 export type Action =
@@ -63,12 +76,15 @@ export type Action =
   | { type: "setLayerRole"; layer: string; role: LayerRole }
   | { type: "acceptImport"; mode: "replace" | "append" }
   | { type: "cancelImport" }
-  | { type: "loadProject"; project: Project }
+  | { type: "loadProject"; project: Project; path?: string }
   | { type: "setMachine"; id: string }
   | { type: "setTheme"; theme: Theme }
   | { type: "setLang"; lang: Lang }
   | { type: "setTouch"; touch: boolean }
-  | { type: "showExport"; show: boolean };
+  | { type: "showExport"; show: boolean }
+  | { type: "noteRecent"; entry: RecentProject }
+  | { type: "clearRecent" }
+  | { type: "noteExport"; path: string };
 
 export const machines: MachineProfile[] = [toploong1325, grblTable];
 
@@ -153,8 +169,13 @@ function reducer(s: UiState, a: Action): UiState {
         pendingImport: null,
       };
     }
-    case "loadProject":
-      return { ...s, project: a.project, selectedContourId: null, pendingImport: null, workspace: "cam" };
+    case "loadProject": {
+      const entry: RecentProject | null = a.path
+        ? { path: a.path, name: a.project.name, openedAt: new Date().toISOString() }
+        : null;
+      const recent = entry ? [entry, ...s.recent.filter((r) => r.path !== entry.path)].slice(0, 6) : s.recent;
+      return { ...s, project: a.project, selectedContourId: null, pendingImport: null, workspace: "cam", recent };
+    }
     case "setMachine":
       return { ...s, project: { ...s.project, machineId: a.id } };
     case "setTheme":
@@ -165,6 +186,14 @@ function reducer(s: UiState, a: Action): UiState {
       return { ...s, touch: a.touch };
     case "showExport":
       return { ...s, showExport: a.show };
+    case "noteRecent": {
+      const dedup = s.recent.filter((r) => r.path !== a.entry.path);
+      return { ...s, recent: [a.entry, ...dedup].slice(0, 6) };
+    }
+    case "clearRecent":
+      return { ...s, recent: [] };
+    case "noteExport":
+      return { ...s, lastExportPath: a.path };
   }
 }
 
@@ -188,7 +217,41 @@ const initial: UiState = {
   generation: 0,
   importSeq: 0,
   pendingImport: null,
+  recent: [],
+  lastExportPath: null,
 };
+
+const PERSIST_KEY = "arcflow.ui.v1";
+
+interface Persisted {
+  recent: RecentProject[];
+  lastExportPath: string | null;
+  theme: Theme;
+  lang: Lang;
+  touch: boolean;
+}
+
+function loadPersisted(): Partial<Persisted> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PERSIST_KEY);
+    if (!raw) return {};
+    const v = JSON.parse(raw) as Partial<Persisted>;
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePersisted(s: UiState) {
+  if (typeof window === "undefined") return;
+  const v: Persisted = { recent: s.recent, lastExportPath: s.lastExportPath, theme: s.theme, lang: s.lang, touch: s.touch };
+  try {
+    window.localStorage.setItem(PERSIST_KEY, JSON.stringify(v));
+  } catch {
+    // Quota or disabled storage — fine, we only lose cross-session memory.
+  }
+}
 
 /** Everything computed from the project. Pure functions from @arcflow/core, memoised. */
 export function useDerived(s: UiState) {
@@ -219,7 +282,8 @@ export function projectFromArcflow(text: string): Project {
 const Ctx = createContext<{ state: UiState; dispatch: Dispatch<Action> } | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initial);
+  const [state, dispatch] = useReducer(reducer, initial, (base) => ({ ...base, ...loadPersisted() }));
+  useEffect(() => savePersisted(state), [state.recent, state.lastExportPath, state.theme, state.lang, state.touch]);
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
 }
 

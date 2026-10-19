@@ -9,7 +9,7 @@ Read this file fully before any change. It is short on purpose; the details live
 | Area | File |
 |---|---|
 | Product spec (Polish original, authoritative) | `docs/source/plasma-cam-spec.pl.md` |
-| Visual design (17 screens) | `docs/design/21-screens.md`, `docs/design-reference.html`, live design: https://claude.ai/artifact/UfHut5G4ZC6xxEBJCpacM1 |
+| Visual design (17 screens) | `docs/design/21-screens.md`, **`docs/UI_mockups.html`** (full renders of every screen — open in a browser, each `<section>` = one frame A/E/C/AS/M/K/R/X1–X8/S/T/P/N/F/I/L1/L2/L3), `docs/design-reference.html`, live design: https://claude.ai/artifact/UfHut5G4ZC6xxEBJCpacM1 |
 | Design tokens, colours, CAM colour semantics | `docs/design/20-design-system.md`, `apps/desktop/src/styles/tokens.css` |
 | Synergy rules (the automation) | `docs/product/12-synergy-rules.md` |
 | Validation rules | `docs/product/13-validation.md` |

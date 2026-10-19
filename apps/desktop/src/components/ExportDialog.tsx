@@ -43,7 +43,10 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
           <div className="spacer" style={{ flex: 1 }} />
           {blocked && <span style={{ color: "var(--error)" }}>{t("export.blocked", { n: errors })}</span>}
           <button className="btn" onClick={() => dispatch({ type: "showExport", show: false })}>{t("action.cancel")}</button>
-          <button className="btn primary" disabled={blocked} onClick={() => void saveTextFile(name, res.text)}>{t("action.save")}</button>
+          <button className="btn primary" disabled={blocked} onClick={async () => {
+            const saved = await saveTextFile(name, res.text);
+            if (saved) dispatch({ type: "noteExport", path: saved });
+          }}>{t("action.save")}</button>
         </footer>
       </div>
     </div>

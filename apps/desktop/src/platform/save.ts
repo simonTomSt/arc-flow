@@ -32,6 +32,8 @@ export async function saveTextFile(defaultName: string, text: string, filters?: 
 export interface OpenedFile {
   name: string;
   text: string;
+  /** Absolute path in Tauri; equal to `name` in the browser. */
+  path: string;
 }
 
 export async function openTextFile(filters: FileFilter[]): Promise<OpenedFile | null> {
@@ -42,7 +44,7 @@ export async function openTextFile(filters: FileFilter[]): Promise<OpenedFile | 
     if (!path || typeof path !== "string") return null;
     const text = await readTextFile(path);
     const name = path.split(/[\\/]/).pop() ?? path;
-    return { name, text };
+    return { name, text, path };
   }
   return pickBrowser(filters, false).then((xs) => xs[0] ?? null);
 }
@@ -57,7 +59,7 @@ export async function openTextFiles(filters: FileFilter[]): Promise<OpenedFile[]
     return Promise.all(
       paths
         .filter((p): p is string => typeof p === "string")
-        .map(async (p) => ({ name: p.split(/[\\/]/).pop() ?? p, text: await readTextFile(p) })),
+        .map(async (p) => ({ name: p.split(/[\\/]/).pop() ?? p, text: await readTextFile(p), path: p })),
     );
   }
   return pickBrowser(filters, true);
@@ -71,7 +73,7 @@ function pickBrowser(filters: FileFilter[], multiple: boolean): Promise<OpenedFi
     input.accept = filters.flatMap((f) => f.extensions.map((e) => "." + e)).join(",");
     input.onchange = async () => {
       const files = Array.from(input.files ?? []);
-      resolve(await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text() }))));
+      resolve(await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text(), path: f.name }))));
     };
     input.oncancel = () => resolve([]);
     input.click();

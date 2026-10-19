@@ -89,6 +89,33 @@ input, select { font: inherit; color: var(--text); background: var(--bg-field); 
 .machine-card b { font-weight: 500; }
 .machine-card span { font-size: 12px; color: var(--text-3); }
 .machine-card[aria-pressed="true"] { border-color: var(--accent); background: rgba(52, 120, 246, .12); }
+.machine-card.add { border-style: dashed; color: var(--text-3); background: transparent; }
+.machine-card.add:disabled { cursor: not-allowed; opacity: .7; }
+
+.start-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.start-card .link { background: none; border: 0; color: var(--text-3); font-size: 12px; cursor: pointer; padding: 2px 4px; }
+.start-card .link:hover { color: var(--text); }
+
+.drop-ctas { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+.drop-ctas .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.material-chip { background: var(--bg-field); border: 1px solid var(--border); border-radius: var(--radius-m); padding: 10px 12px; display: grid; gap: 4px; }
+.material-chip .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; color: var(--text-2); }
+.material-chip .row b { color: var(--text); font-weight: 500; }
+.material-chip .row.sub { font-size: 12px; color: var(--text-3); }
+
+.recent-list { display: grid; gap: 8px; }
+.recent-row { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-m); border: 1px solid var(--border); background: var(--bg-field); color: var(--text); text-align: left; cursor: pointer; }
+.recent-row:hover { border-color: var(--accent); }
+.recent-thumb { width: 36px; height: 32px; border-radius: var(--radius-s); background: var(--bg-canvas); color: var(--cam-cut); display: grid; place-items: center; }
+.recent-thumb svg { width: 28px; height: 28px; }
+.recent-meta { display: grid; gap: 2px; min-width: 0; }
+.recent-meta b { font-weight: 500; }
+.recent-meta .auto { font-size: 11px; color: var(--text-3); }
+.recent-chip { font-size: 11px; padding: 2px 6px; border-radius: var(--radius-s); background: rgba(48, 184, 96, .14); color: var(--ok); white-space: nowrap; }
+.recent-chip.neutral { background: var(--bg-canvas); color: var(--text-3); }
+.recent-ctas { display: flex; gap: 8px; margin-top: 4px; }
+.recent-ctas .btn { flex: 1; }
 
 .import-wrap { overflow: auto; padding: 24px; background: var(--bg-canvas); }
 .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1200px; margin: 0 auto; }
