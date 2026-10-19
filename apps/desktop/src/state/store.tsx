@@ -45,6 +45,8 @@ export interface UiState {
   showExport: boolean;
   /** Bumped by "Generuj"; derived data is recomputed from the project anyway. */
   generation: number;
+  /** Monotonic counter for DXF imports; drives the `iN-` id prefix so appended parts can't collide with earlier ones. */
+  importSeq: number;
   /** Set when an import needs operator review (design: Import report). */
   pendingImport: PendingImport | null;
 }
@@ -114,13 +116,15 @@ function reducer(s: UiState, a: Action): UiState {
       if (!s.pendingImport) return s;
       const { rawContours, layerMap, fileName } = s.pendingImport;
       const { contours, overrides } = applyLayerRoles(rawContours, layerMap);
-      const prefix = `i${s.generation + 1}-`;
+      const nextSeq = s.importSeq + 1;
+      const prefix = `i${nextSeq}-`;
       const prefixed = prefixIds(contours, prefix);
       const prefixedOverrides: Record<string, OperationOverrides> = {};
       for (const [k, v] of Object.entries(overrides)) prefixedOverrides[`${prefix}${k}`] = v;
       if (a.mode === "replace") {
         return {
           ...s,
+          importSeq: nextSeq,
           project: {
             ...s.project,
             name: fileName.replace(/\.(dxf|svg)$/i, ""),
@@ -137,6 +141,7 @@ function reducer(s: UiState, a: Action): UiState {
       const shifted = prefixed.map((c) => translateContour(c, shift, 0));
       return {
         ...s,
+        importSeq: nextSeq,
         project: {
           ...s.project,
           contours: [...s.project.contours, ...shifted],
@@ -183,6 +188,7 @@ const initial: UiState = {
   touch: false,
   showExport: false,
   generation: 0,
+  importSeq: 0,
   pendingImport: null,
 };
 
