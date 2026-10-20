@@ -30,11 +30,18 @@ Discoveries during M1:
 
 ## M2 · Cut charts & machines (screens F, L1, L2)
 - [ ] Library storage (app data dir, JSON per item, backup export)
-- [ ] Cut chart manager UI + import/export; source badges; out-of-range warnings
-- [ ] Kerf calibration wizard (3 steps) writing to the chart (`calibrateKerf` exists)
-- [ ] Nozzle library; machine profiles editor with "Co z tego wynika" G-code preview
+- [x] Cut chart manager UI (screen F) with source badges; interpolation already warns in `lookupCutChart`
+- [x] Kerf calibration wizard (3 steps) writing to the chart (`applyCalibration` + screen F)
+- [ ] Chart import/export; out-of-range warnings surfaced in the F table
+- [ ] Nozzle library (L1); machine profiles editor (L2) with "Co z tego wynika" G-code preview
 - [ ] Rules overrides per chart row (small-hole k, lead k…)
 **Accept:** change thickness → speeds/kerf/leads follow; interpolated rows warn.
+
+Discoveries during M2 (screen F):
+- The chart is held mutably on the UI store (`state.chart`, seeded from `powermax45S235`); core stays pure via `editCutChartRow` / `applyCalibration`.
+- `applyCalibration` rounds to 3 decimals and stamps `calibratedAt` with the day the dispatch runs (user-local date).
+- Screen F opens as a modal from the top menu bar ("Tabele cięcia"). It is deliberately not a workspace tab — the design treats it as a library view, outside the project workspaces.
+- Wizard warns when outer-vs-hole spread > 0,1 mm, matching the design's "sprawdź pomiary" hint.
 
 ## M3 · Verified output (screens L3, I)
 - [ ] `/verify-post` against the owner's `.cps`; resolve every F2100K open question; empty `unverified`

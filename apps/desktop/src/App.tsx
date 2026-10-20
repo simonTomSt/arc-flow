@@ -12,6 +12,7 @@ import { ImportReportScreen } from "./components/ImportReportScreen";
 import { ToolStrip, type Tool } from "./components/ToolStrip";
 import { ToolCard } from "./components/ToolCard";
 import { ProblemsPanel } from "./components/ProblemsPanel";
+import { ChartsScreen } from "./components/ChartsScreen";
 import { CamCanvas } from "./canvas/CamCanvas";
 import { useT } from "./i18n";
 
@@ -99,6 +100,7 @@ export function App() {
       <OrderBar est={d.est} issues={d.issues} />
       <StatusBar issues={d.issues} machine={d.machine} chartWarning={d.chartWarning} />
       {state.showExport && <ExportDialog issues={d.issues} toolpath={d.toolpath} row={d.row} machine={d.machine} />}
+      {state.showCharts && <ChartsScreen />}
     </div>
   );
 }

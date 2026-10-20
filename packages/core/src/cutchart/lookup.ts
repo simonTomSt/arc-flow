@@ -37,14 +37,23 @@ export function lookupCutChart(chart: CutChart, p: CutPreset): LookupResult | nu
  * Outer measures shrink by kerf deviation, hole grows by it.
  * Returns the real kerf, given the kerf the sample was cut with.
  */
-export function calibrateKerf(input: {
+export interface CalibrationInput {
   nominalSquareMm: number;
   nominalHoleMm: number;
   measuredA: number;
   measuredB: number;
   measuredHole: number;
   kerfUsedMm: number;
-}): { kerfMm: number; fromOuter: number; fromHole: number; spread: number } {
+}
+
+export interface CalibrationResult {
+  kerfMm: number;
+  fromOuter: number;
+  fromHole: number;
+  spread: number;
+}
+
+export function calibrateKerf(input: CalibrationInput): CalibrationResult {
   const outerAvg = (input.measuredA + input.measuredB) / 2;
   const fromOuter = input.kerfUsedMm + (input.nominalSquareMm - outerAvg);
   const fromHole = input.kerfUsedMm + (input.measuredHole - input.nominalHoleMm);

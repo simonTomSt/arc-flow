@@ -1,5 +1,5 @@
 import { useContext, useRef, useState, type DragEvent } from "react";
-import { lookupCutChart, powermax45S235 } from "@arcflow/core";
+import { lookupCutChart } from "@arcflow/core";
 import { machines, projectFromArcflow, useStore, type Lang, type RecentProject, type Theme } from "../state/store";
 import { LangContext, fmtNum, useT } from "../i18n";
 import { openTextFile, openTextFiles } from "../platform/save";
@@ -21,7 +21,7 @@ export function StartScreen() {
   const langs: Lang[] = ["pl", "en"];
   const themes: Theme[] = ["dark", "light", "ultra-dark"];
   const preset = state.project.preset;
-  const chartRow = lookupCutChart(powermax45S235, preset)?.row;
+  const chartRow = lookupCutChart(state.chart, preset)?.row;
 
   async function stageFiles(files: File[]) {
     for (const f of files) {

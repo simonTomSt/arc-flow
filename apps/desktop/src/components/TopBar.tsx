@@ -56,6 +56,9 @@ export function TopBar({ blocked }: { blocked: boolean }) {
         >
           {t("action.saveProject")}
         </button>
+        <button className="menu-item" onClick={() => dispatch({ type: "showCharts", show: true })}>
+          {t("charts.open")}
+        </button>
         <div className="spacer" />
         <select value={state.theme} onChange={(e) => dispatch({ type: "setTheme", theme: e.target.value as Theme })} aria-label="Theme">
           {themes.map((th) => <option key={th} value={th}>{th}</option>)}

@@ -1,10 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import {
+  applyCalibration,
   applyLayerRoles,
   bbox,
   buildToolpath,
+  type CalibrationResult,
+  type CutChart,
+  type CutChartRow,
   defaultLayerMap,
   demoProject,
+  editCutChartRow,
   estimate,
   generateOperations,
   importDxf,
@@ -64,6 +69,10 @@ export interface UiState {
   recent: RecentProject[];
   /** Absolute path of the last G-code export; persisted in localStorage. */
   lastExportPath: string | null;
+  /** The active cut chart (library). In M2 we keep a single starter chart; L1/L2 add more. */
+  chart: CutChart;
+  /** Charts screen (design F) is open as an overlay. */
+  showCharts: boolean;
 }
 
 export type Action =
@@ -86,7 +95,10 @@ export type Action =
   | { type: "noteRecent"; entry: RecentProject }
   | { type: "clearRecent" }
   | { type: "noteExport"; path: string }
-  | { type: "applyFixes"; issues: Issue[] };
+  | { type: "applyFixes"; issues: Issue[] }
+  | { type: "showCharts"; show: boolean }
+  | { type: "editChartRow"; index: number; patch: Partial<CutChartRow> }
+  | { type: "applyCalibration"; index: number; result: CalibrationResult };
 
 export const machines: MachineProfile[] = [toploong1325, grblTable];
 
@@ -196,6 +208,12 @@ function reducer(s: UiState, a: Action): UiState {
       return { ...s, recent: [] };
     case "noteExport":
       return { ...s, lastExportPath: a.path };
+    case "showCharts":
+      return { ...s, showCharts: a.show };
+    case "editChartRow":
+      return { ...s, chart: editCutChartRow(s.chart, a.index, a.patch) };
+    case "applyCalibration":
+      return { ...s, chart: applyCalibration(s.chart, a.index, a.result, new Date().toISOString().slice(0, 10)) };
     case "applyFixes": {
       const overrides = { ...s.project.overrides };
       for (const i of a.issues) {
@@ -235,6 +253,8 @@ const initial: UiState = {
   pendingImport: null,
   recent: [],
   lastExportPath: null,
+  chart: powermax45S235,
+  showCharts: false,
 };
 
 const PERSIST_KEY = "arcflow.ui.v1";
@@ -274,7 +294,7 @@ export function useDerived(s: UiState) {
   return useMemo(() => {
     const p = s.project;
     const machine = machines.find((m) => m.id === p.machineId) ?? toploong1325;
-    const look = lookupCutChart(powermax45S235, p.preset);
+    const look = lookupCutChart(s.chart, p.preset);
     if (!look) throw new Error("No cut chart row for preset");
     const row = look.row;
     const ops = generateOperations({ contours: p.contours, row, machine, mode: p.mode, overrides: p.overrides, sheet: p.sheet });
@@ -283,7 +303,7 @@ export function useDerived(s: UiState) {
     const est = estimate(toolpath, row, machine);
     return { machine, row, ops, toolpath, issues, est, chartWarning: look.warning };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.project, s.generation]);
+  }, [s.project, s.generation, s.chart]);
 }
 
 /** Serialize the project to a .arcflow string. */
