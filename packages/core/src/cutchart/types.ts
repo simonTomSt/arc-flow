@@ -1,3 +1,5 @@
+import type { SynergyRules } from "../cam/rules";
+
 /** One cut-chart row. Key = material + thickness + current + nozzle (spec §5.5). */
 export interface CutChartRow {
   material: string;
@@ -14,6 +16,13 @@ export interface CutChartRow {
   source: "factory" | "calibrated" | "manual" | "interpolated";
   calibratedAt?: string;
   note?: string;
+  /**
+   * Per-row override for the Synergy thresholds (spec §5.5: "Interpolacja…")
+   * — lets a chart tune e.g. smallHoleK or leadInK for a specific thickness
+   * without touching code. Overrides anything in `defaultRules`; the project
+   * can still override the row via `GenerateInput.rules`.
+   */
+  rules?: Partial<SynergyRules>;
 }
 
 export interface CutChart {

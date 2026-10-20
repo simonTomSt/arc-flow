@@ -6,3 +6,4 @@ export * from "./synergy";
 export * from "./order";
 export * from "./toolpath";
 export * from "./estimate";
+export * from "./preview";

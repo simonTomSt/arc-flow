@@ -28,7 +28,7 @@ export interface GenerateInput {
  *  - manual:   value = override ?? manualDefault (auto is still computed and shown, never applied)
  */
 export function generateOperations(input: GenerateInput): Operation[] {
-  const rules = input.rules ?? defaultRules;
+  const rules: SynergyRules = { ...defaultRules, ...(input.row.rules ?? {}), ...(input.rules ?? {}) };
   const ov = input.overrides ?? {};
   const classified = classify(input.contours);
   const ops = classified.map((c) => buildOp(c, input, rules, ov[c.contour.id] ?? {}));

@@ -8,6 +8,7 @@ import {
   type CutChart,
   type CutChartRow,
   defaultLayerMap,
+  defaultNozzles,
   demoProject,
   editCutChartRow,
   estimate,
@@ -16,6 +17,8 @@ import {
   type ImportReport,
   type LayerRole,
   lookupCutChart,
+  type Nozzle,
+  type NozzleLibrary,
   parseProject,
   powermax45S235,
   serializeProject,
@@ -71,8 +74,16 @@ export interface UiState {
   lastExportPath: string | null;
   /** The active cut chart (library). In M2 we keep a single starter chart; L1/L2 add more. */
   chart: CutChart;
+  /** Machine library (design L2). Starter list; persisted in localStorage. */
+  machines: MachineProfile[];
+  /** Nozzle library (design L1). */
+  nozzles: NozzleLibrary;
   /** Charts screen (design F) is open as an overlay. */
   showCharts: boolean;
+  /** Machines screen (design L2) is open as an overlay. */
+  showMachines: boolean;
+  /** Nozzles screen (design L1) is open as an overlay. */
+  showNozzles: boolean;
 }
 
 export type Action =
@@ -98,9 +109,19 @@ export type Action =
   | { type: "applyFixes"; issues: Issue[] }
   | { type: "showCharts"; show: boolean }
   | { type: "editChartRow"; index: number; patch: Partial<CutChartRow> }
-  | { type: "applyCalibration"; index: number; result: CalibrationResult };
+  | { type: "applyCalibration"; index: number; result: CalibrationResult }
+  | { type: "loadChart"; chart: CutChart }
+  | { type: "showMachines"; show: boolean }
+  | { type: "upsertMachine"; machine: MachineProfile }
+  | { type: "deleteMachine"; id: string }
+  | { type: "newMachineFromTemplate"; template: MachineProfile; name: string }
+  | { type: "showNozzles"; show: boolean }
+  | { type: "upsertNozzle"; nozzle: Nozzle }
+  | { type: "deleteNozzle"; id: string }
+  | { type: "loadNozzles"; library: NozzleLibrary };
 
-export const machines: MachineProfile[] = [toploong1325, grblTable];
+/** Factory templates for "Nowa z szablonu" (design L2). Not editable. */
+export const machineTemplates: MachineProfile[] = [toploong1325, grblTable];
 
 function prefixIds(contours: Project["contours"], prefix: string): Project["contours"] {
   return contours.map((c) => ({ ...c, id: `${prefix}${c.id}` }));
@@ -214,6 +235,43 @@ function reducer(s: UiState, a: Action): UiState {
       return { ...s, chart: editCutChartRow(s.chart, a.index, a.patch) };
     case "applyCalibration":
       return { ...s, chart: applyCalibration(s.chart, a.index, a.result, new Date().toISOString().slice(0, 10)) };
+    case "loadChart":
+      return { ...s, chart: a.chart };
+    case "showMachines":
+      return { ...s, showMachines: a.show };
+    case "upsertMachine": {
+      const i = s.machines.findIndex((m) => m.id === a.machine.id);
+      const next = s.machines.slice();
+      if (i >= 0) next[i] = a.machine;
+      else next.push(a.machine);
+      return { ...s, machines: next };
+    }
+    case "deleteMachine": {
+      if (s.machines.length <= 1) return s;
+      const next = s.machines.filter((m) => m.id !== a.id);
+      const projectMachineId = s.project.machineId === a.id ? next[0]!.id : s.project.machineId;
+      return { ...s, machines: next, project: { ...s.project, machineId: projectMachineId } };
+    }
+    case "newMachineFromTemplate": {
+      const id = uniqueMachineId(s.machines, a.template.id);
+      const machine: MachineProfile = { ...a.template, id, name: a.name };
+      return { ...s, machines: [...s.machines, machine] };
+    }
+    case "showNozzles":
+      return { ...s, showNozzles: a.show };
+    case "upsertNozzle": {
+      const nozzles = s.nozzles.nozzles.slice();
+      const i = nozzles.findIndex((n) => n.id === a.nozzle.id);
+      if (i >= 0) nozzles[i] = a.nozzle;
+      else nozzles.push(a.nozzle);
+      return { ...s, nozzles: { ...s.nozzles, nozzles } };
+    }
+    case "deleteNozzle": {
+      if (s.nozzles.nozzles.length <= 1) return s;
+      return { ...s, nozzles: { ...s.nozzles, nozzles: s.nozzles.nozzles.filter((n) => n.id !== a.id) } };
+    }
+    case "loadNozzles":
+      return { ...s, nozzles: a.library };
     case "applyFixes": {
       const overrides = { ...s.project.overrides };
       for (const i of a.issues) {
@@ -229,6 +287,16 @@ function reducer(s: UiState, a: Action): UiState {
       return { ...s, project: { ...s.project, overrides } };
     }
   }
+}
+
+function uniqueMachineId(existing: MachineProfile[], base: string): string {
+  const taken = new Set(existing.map((m) => m.id));
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 999; i++) {
+    const id = `${base}-${i}`;
+    if (!taken.has(id)) return id;
+  }
+  return `${base}-${Date.now()}`;
 }
 
 function sheetFillOffset(existing: Project["contours"], sheetWidth: number): number {
@@ -254,7 +322,11 @@ const initial: UiState = {
   recent: [],
   lastExportPath: null,
   chart: powermax45S235,
+  machines: [toploong1325, grblTable],
+  nozzles: defaultNozzles,
   showCharts: false,
+  showMachines: false,
+  showNozzles: false,
 };
 
 const PERSIST_KEY = "arcflow.ui.v1";
@@ -265,6 +337,9 @@ interface Persisted {
   theme: Theme;
   lang: Lang;
   touch: boolean;
+  machines: MachineProfile[];
+  nozzles: NozzleLibrary;
+  chart: CutChart;
 }
 
 function loadPersisted(): Partial<Persisted> {
@@ -281,7 +356,7 @@ function loadPersisted(): Partial<Persisted> {
 
 function savePersisted(s: UiState) {
   if (typeof window === "undefined") return;
-  const v: Persisted = { recent: s.recent, lastExportPath: s.lastExportPath, theme: s.theme, lang: s.lang, touch: s.touch };
+  const v: Persisted = { recent: s.recent, lastExportPath: s.lastExportPath, theme: s.theme, lang: s.lang, touch: s.touch, machines: s.machines, nozzles: s.nozzles, chart: s.chart };
   try {
     window.localStorage.setItem(PERSIST_KEY, JSON.stringify(v));
   } catch {
@@ -293,7 +368,7 @@ function savePersisted(s: UiState) {
 export function useDerived(s: UiState) {
   return useMemo(() => {
     const p = s.project;
-    const machine = machines.find((m) => m.id === p.machineId) ?? toploong1325;
+    const machine = s.machines.find((m) => m.id === p.machineId) ?? s.machines[0] ?? toploong1325;
     const look = lookupCutChart(s.chart, p.preset);
     if (!look) throw new Error("No cut chart row for preset");
     const row = look.row;
@@ -303,7 +378,7 @@ export function useDerived(s: UiState) {
     const est = estimate(toolpath, row, machine);
     return { machine, row, ops, toolpath, issues, est, chartWarning: look.warning };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.project, s.generation, s.chart]);
+  }, [s.project, s.generation, s.chart, s.machines]);
 }
 
 /** Serialize the project to a .arcflow string. */
@@ -319,7 +394,26 @@ const Ctx = createContext<{ state: UiState; dispatch: Dispatch<Action> } | null>
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial, (base) => ({ ...base, ...loadPersisted() }));
-  useEffect(() => savePersisted(state), [state.recent, state.lastExportPath, state.theme, state.lang, state.touch]);
+  useEffect(() => savePersisted(state), [state.recent, state.lastExportPath, state.theme, state.lang, state.touch, state.machines, state.nozzles, state.chart]);
+  // Tauri-only library persistence: load on mount, overwrite file-per-item on change.
+  // In the browser these resolve to no-ops and localStorage keeps everything.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { loadLibrary } = await import("../platform/library");
+      const snap = await loadLibrary();
+      if (cancelled) return;
+      if (snap.chart) dispatch({ type: "loadChart", chart: snap.chart });
+      if (snap.machines && snap.machines.length) {
+        for (const m of snap.machines) dispatch({ type: "upsertMachine", machine: m });
+      }
+      if (snap.nozzles) dispatch({ type: "loadNozzles", library: snap.nozzles });
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => { void (async () => { (await import("../platform/library")).saveChart(state.chart); })(); }, [state.chart]);
+  useEffect(() => { void (async () => { (await import("../platform/library")).saveMachines(state.machines); })(); }, [state.machines]);
+  useEffect(() => { void (async () => { (await import("../platform/library")).saveNozzles(state.nozzles); })(); }, [state.nozzles]);
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
 }
 

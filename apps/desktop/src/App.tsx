@@ -13,6 +13,8 @@ import { ToolStrip, type Tool } from "./components/ToolStrip";
 import { ToolCard } from "./components/ToolCard";
 import { ProblemsPanel } from "./components/ProblemsPanel";
 import { ChartsScreen } from "./components/ChartsScreen";
+import { MachinesScreen } from "./components/MachinesScreen";
+import { NozzlesScreen } from "./components/NozzlesScreen";
 import { CamCanvas } from "./canvas/CamCanvas";
 import { useT } from "./i18n";
 
@@ -101,6 +103,8 @@ export function App() {
       <StatusBar issues={d.issues} machine={d.machine} chartWarning={d.chartWarning} />
       {state.showExport && <ExportDialog issues={d.issues} toolpath={d.toolpath} row={d.row} machine={d.machine} />}
       {state.showCharts && <ChartsScreen />}
+      {state.showMachines && <MachinesScreen />}
+      {state.showNozzles && <NozzlesScreen />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useContext, useRef, useState, type DragEvent } from "react";
 import { lookupCutChart } from "@arcflow/core";
-import { machines, projectFromArcflow, useStore, type Lang, type RecentProject, type Theme } from "../state/store";
+import { projectFromArcflow, useStore, type Lang, type RecentProject, type Theme } from "../state/store";
 import { LangContext, fmtNum, useT } from "../i18n";
 import { openTextFile, openTextFiles } from "../platform/save";
 import type { Mode } from "@arcflow/core";
@@ -72,7 +72,7 @@ export function StartScreen() {
         <section className="start-card">
           <h3>{t("start.machines")}</h3>
           <div className="machine-cards">
-            {machines.map((m) => (
+            {state.machines.map((m) => (
               <button key={m.id} className="machine-card" aria-pressed={state.project.machineId === m.id} onClick={() => dispatch({ type: "setMachine", id: m.id })}>
                 <b>{m.name}</b>
                 <span>{m.controller} · {m.hasTHC ? "THC" : "bez THC"} · {m.swirl}</span>

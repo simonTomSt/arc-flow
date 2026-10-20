@@ -46,7 +46,7 @@ export interface ValidateInput {
  * Runs in every mode — Manual turns the automation off, never the checks.
  */
 export function validate(input: ValidateInput): Issue[] {
-  const rules = input.rules ?? defaultRules;
+  const rules: SynergyRules = { ...defaultRules, ...(input.row.rules ?? {}), ...(input.rules ?? {}) };
   const { row, machine, sheet } = input;
   const byId = new Map(input.contours.map((c) => [c.id, c]));
   const issues: Issue[] = [];

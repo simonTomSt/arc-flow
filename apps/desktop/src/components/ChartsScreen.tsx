@@ -1,8 +1,20 @@
-import { useContext, useMemo, useState } from "react";
-import { calibrateKerf, type CutChart, type CutChartRow } from "@arcflow/core";
+import { Fragment, useContext, useMemo, useState } from "react";
+import {
+  calibrateKerf,
+  cutChartIssues,
+  defaultRules,
+  lookupCutChart,
+  parseCutChart,
+  serializeCutChart,
+  type ChartIssue,
+  type CutChart,
+  type CutChartRow,
+  type SynergyRules,
+} from "@arcflow/core";
 import { useStore } from "../state/store";
 import { LangContext, fmtNum, useT } from "../i18n";
 import type { MessageKey } from "../i18n";
+import { openTextFile, saveTextFile } from "../platform/save";
 
 /**
  * Design screen F — Cut charts & kerf calibration.
@@ -18,6 +30,26 @@ export function ChartsScreen() {
   const [selectedMaterialNozzle, setSelectedMaterialNozzle] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<number>(() => chart.rows.findIndex((r) => r.thicknessMm === state.project.preset.thicknessMm && r.nozzle === state.project.preset.nozzle));
   const [wizard, setWizard] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  const activeMachine = useMemo(
+    () => state.machines.find((m) => m.id === state.project.machineId) ?? state.machines[0]!,
+    [state.project.machineId, state.machines],
+  );
+  const issues = useMemo(
+    () => cutChartIssues(chart, { hasTHC: activeMachine.hasTHC, rapidMmMin: activeMachine.rapidMmMin }),
+    [chart, activeMachine],
+  );
+  const issuesByRow = useMemo(() => {
+    const m = new Map<number, ChartIssue[]>();
+    for (const i of issues) {
+      const list = m.get(i.rowIndex) ?? [];
+      list.push(i);
+      m.set(i.rowIndex, list);
+    }
+    return m;
+  }, [issues]);
 
   const grouped = useMemo(() => groupByMaterialNozzle(chart), [chart]);
   const activeKey = selectedMaterialNozzle ?? grouped[0]?.key ?? null;
@@ -28,15 +60,58 @@ export function ChartsScreen() {
     dispatch({ type: "showCharts", show: false });
   }
 
+  async function doExport() {
+    const name = `${chart.id || "cutchart"}.arcflow-chart.json`;
+    await saveTextFile(name, serializeCutChart(chart), [
+      { name: "ArcFlow cut chart", extensions: ["json"] },
+    ]);
+  }
+
+  async function doImport() {
+    setImportError(null);
+    const picked = await openTextFile([{ name: "ArcFlow cut chart", extensions: ["json"] }]);
+    if (!picked) return;
+    let next: CutChart;
+    try {
+      next = parseCutChart(picked.text);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    // Guard: project needs a row for its preset; without one, the CAM screen crashes.
+    const look = lookupCutChart(next, state.project.preset);
+    if (!look) {
+      setImportError(
+        `No row for ${state.project.preset.material} · ${state.project.preset.thicknessMm} mm · ${state.project.preset.currentA} A · nozzle ${state.project.preset.nozzle}`,
+      );
+      return;
+    }
+    dispatch({ type: "loadChart", chart: next });
+    setSelectedMaterialNozzle(null);
+    setSelectedRow(next.rows.findIndex((r) => r.thicknessMm === state.project.preset.thicknessMm && r.nozzle === state.project.preset.nozzle));
+  }
+
   return (
     <div className="modal-back" role="dialog" aria-modal="true" aria-label={t("charts.title")}>
       <div className="charts-shell">
         <header className="charts-header">
           <strong>{t("charts.title")}</strong>
           <span className="charts-sub">{t("charts.subtitle", { source: chart.source })}</span>
+          {issues.length > 0 && (
+            <span className="chip-s chip-warn" title={issues.map((i) => formatIssue(i, t)).join("\n")}>
+              {issues.length === 1 ? t("charts.issueCount.one") : t("charts.issueCount", { n: issues.length })}
+            </span>
+          )}
           <div className="spacer" />
+          <button className="btn" onClick={doImport}>{t("charts.import")}</button>
+          <button className="btn" onClick={doExport}>{t("charts.export")}</button>
           <button className="btn" onClick={close}>{t("charts.close")}</button>
         </header>
+        {importError && (
+          <div className="charts-import-error" role="alert">
+            {t("charts.importError", { reason: importError })}
+          </div>
+        )}
         <div className="charts-body">
           <aside className="charts-tree">
             <h3>{t("charts.materials")}</h3>
@@ -69,6 +144,7 @@ export function ChartsScreen() {
               <table className="charts-table">
                 <thead>
                   <tr>
+                    <th aria-label={t("rules.title")}></th>
                     <th>{t("charts.col.thickness")}</th>
                     <th>{t("charts.col.current")}</th>
                     <th>{t("charts.col.nozzle")}</th>
@@ -85,23 +161,58 @@ export function ChartsScreen() {
                   {(activeGroup?.indices ?? []).map((idx) => {
                     const r = chart.rows[idx];
                     if (!r) return null;
+                    const rowIssues = issuesByRow.get(idx) ?? [];
+                    const hasError = rowIssues.some((i) => i.severity === "error");
+                    const hasWarn = rowIssues.some((i) => i.severity === "warn");
+                    const open = expandedRow === idx;
+                    const hasRules = r.rules && Object.keys(r.rules).length > 0;
                     return (
-                      <tr key={idx} aria-selected={idx === selectedRow} onClick={() => setSelectedRow(idx)}>
-                        <td>{fmtNum(r.thicknessMm, lang)} mm</td>
-                        <td>{r.currentA} A</td>
-                        <td>{r.nozzle}</td>
-                        <td>{fmtNum(r.kerfMm, lang)} mm</td>
-                        <td>{r.feedMmMin} mm/min</td>
-                        <td>{fmtNum(r.pierceHeightMm, lang)} mm</td>
-                        <td>{fmtNum(r.pierceDelayS, lang)} s</td>
-                        <td>{fmtNum(r.cutHeightMm, lang)} mm</td>
-                        <td>{r.arcVoltageV !== undefined ? `${r.arcVoltageV} V` : "—"}</td>
-                        <td>
-                          <span className={`src-chip src-${r.source}`}>{t(`charts.source.${r.source}` as MessageKey)}</span>
-                          {r.calibratedAt && <div className="src-date">{t("charts.calibratedAt", { date: r.calibratedAt })}</div>}
-                          {r.note && <div className="src-date">{r.note}</div>}
-                        </td>
-                      </tr>
+                      <Fragment key={idx}>
+                        <tr
+                          aria-selected={idx === selectedRow}
+                          onClick={() => setSelectedRow(idx)}
+                          className={hasError ? "row-error" : hasWarn ? "row-warn" : undefined}
+                        >
+                          <td className="row-expand">
+                            <button
+                              className={`chev${open ? " open" : ""}${hasRules ? " has-rules" : ""}`}
+                              aria-expanded={open}
+                              aria-label={open ? t("rules.hide") : t("rules.show")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedRow(open ? null : idx);
+                                setSelectedRow(idx);
+                              }}
+                            >
+                              ▸
+                            </button>
+                          </td>
+                          <td>{fmtNum(r.thicknessMm, lang)} mm</td>
+                          <td>{r.currentA} A</td>
+                          <td>{r.nozzle}</td>
+                          <td>{fmtNum(r.kerfMm, lang)} mm</td>
+                          <td>{r.feedMmMin} mm/min</td>
+                          <td>{fmtNum(r.pierceHeightMm, lang)} mm</td>
+                          <td>{fmtNum(r.pierceDelayS, lang)} s</td>
+                          <td>{fmtNum(r.cutHeightMm, lang)} mm</td>
+                          <td>{r.arcVoltageV !== undefined ? `${r.arcVoltageV} V` : "—"}</td>
+                          <td>
+                            <span className={`src-chip src-${r.source}`}>{t(`charts.source.${r.source}` as MessageKey)}</span>
+                            {r.calibratedAt && <div className="src-date">{t("charts.calibratedAt", { date: r.calibratedAt })}</div>}
+                            {r.note && <div className="src-date">{r.note}</div>}
+                            {rowIssues.map((i, k) => (
+                              <div key={k} className={`row-issue row-issue-${i.severity}`}>{formatIssue(i, t)}</div>
+                            ))}
+                          </td>
+                        </tr>
+                        {open && (
+                          <tr className="row-expand-body">
+                            <td colSpan={11}>
+                              <RowRulesEditor index={idx} row={r} />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -126,6 +237,76 @@ interface Group {
   material: string;
   nozzle: string;
   indices: number[];
+}
+
+function formatIssue(i: ChartIssue, t: (k: MessageKey, p?: Record<string, string | number>) => string): string {
+  const key = `charts.issue.${i.code}` as MessageKey;
+  return t(key, i.params);
+}
+
+/** The subset of SynergyRules exposed on screen F. Keep narrow — the rest can be edited via `.json` import. */
+const EDITABLE_RULES = [
+  "smallHoleK",
+  "smallHoleMinMm",
+  "smallHoleSpeedPct",
+  "leadInK",
+  "leadInMinMm",
+  "craterMarginMm",
+  "thcOffBelowLengthMm",
+  "defaultOvercutMm",
+] as const satisfies readonly (keyof SynergyRules)[];
+
+function RowRulesEditor({ index, row }: { index: number; row: CutChartRow }) {
+  const { dispatch } = useStore();
+  const t = useT();
+  const lang = useContext(LangContext);
+  const rules = row.rules ?? {};
+
+  function setField(k: keyof SynergyRules, v: number | null) {
+    const next: Partial<SynergyRules> = { ...rules };
+    if (v === null) delete next[k];
+    else next[k] = v;
+    const patch: Partial<CutChartRow> = Object.keys(next).length ? { rules: next } : { rules: undefined };
+    dispatch({ type: "editChartRow", index, patch });
+  }
+
+  return (
+    <div className="row-rules">
+      <div className="row-rules-head">
+        <b>{t("rules.title")}</b>
+        <small>{t("rules.hint")}</small>
+      </div>
+      <div className="row-rules-grid">
+        {EDITABLE_RULES.map((k) => {
+          const def = defaultRules[k];
+          const override = rules[k];
+          const hasOverride = override !== undefined;
+          return (
+            <label key={k} className={hasOverride ? "override" : undefined}>
+              <span>{t(`rules.${k}` as MessageKey)}</span>
+              <span className="field-row">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={hasOverride ? fmtNum(override as number, lang, 3) : ""}
+                  placeholder={t("rules.default", { v: def })}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (!raw) return setField(k, null);
+                    const n = parseFloat(raw.replace(",", "."));
+                    if (Number.isFinite(n)) setField(k, n);
+                  }}
+                />
+                {hasOverride && (
+                  <button className="link" onClick={() => setField(k, null)} title={t("rules.restore")}>↺</button>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function groupByMaterialNozzle(chart: CutChart): Group[] {

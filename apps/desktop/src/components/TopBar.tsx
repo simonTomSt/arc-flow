@@ -1,7 +1,8 @@
 import { useRef } from "react";
-import { useStore, machines, projectFromArcflow, projectToArcflow, type Workspace, type Theme } from "../state/store";
+import { useStore, projectFromArcflow, projectToArcflow, type Workspace, type Theme } from "../state/store";
 import { useT } from "../i18n";
 import { openTextFile, saveTextFile } from "../platform/save";
+import { serializeBackup } from "../platform/library";
 import type { Mode } from "@arcflow/core";
 
 /** Row 1: logo, project, menus, Export. Row 2: workspaces, preset chip, mode switch, Generuj (design: every screen). */
@@ -59,6 +60,23 @@ export function TopBar({ blocked }: { blocked: boolean }) {
         <button className="menu-item" onClick={() => dispatch({ type: "showCharts", show: true })}>
           {t("charts.open")}
         </button>
+        <button className="menu-item" onClick={() => dispatch({ type: "showMachines", show: true })}>
+          {t("machines.open")}
+        </button>
+        <button className="menu-item" onClick={() => dispatch({ type: "showNozzles", show: true })}>
+          {t("nozzles.open")}
+        </button>
+        <button
+          className="menu-item"
+          title={t("library.backup.hint")}
+          onClick={() => {
+            const text = serializeBackup({ chart: state.chart, machines: state.machines, nozzles: state.nozzles });
+            const date = new Date().toISOString().slice(0, 10);
+            void saveTextFile(`arcflow-library-${date}.json`, text, [{ name: "ArcFlow library backup", extensions: ["json"] }]);
+          }}
+        >
+          {t("library.backup")}
+        </button>
         <div className="spacer" />
         <select value={state.theme} onChange={(e) => dispatch({ type: "setTheme", theme: e.target.value as Theme })} aria-label="Theme">
           {themes.map((th) => <option key={th} value={th}>{th}</option>)}
@@ -78,7 +96,7 @@ export function TopBar({ blocked }: { blocked: boolean }) {
         <div className="spacer" />
         <span className="chip">
           <select value={p.machineId} onChange={(e) => dispatch({ type: "setMachine", id: e.target.value })} style={{ border: 0, background: "none", padding: 0 }}>
-            {machines.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {state.machines.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
           · <b>{p.preset.material}</b> · <b>{p.preset.thicknessMm} mm</b> · <b>{p.preset.currentA} A</b>
         </span>

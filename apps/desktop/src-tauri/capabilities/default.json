@@ -5,10 +5,15 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:path:default",
     "dialog:allow-save",
     "dialog:allow-open",
     "fs:allow-write-text-file",
     "fs:allow-read-text-file",
-    "fs:scope-home-recursive"
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:scope-home-recursive",
+    "fs:allow-app-write-recursive",
+    "fs:allow-app-read-recursive"
   ]
 }
