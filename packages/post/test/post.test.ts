@@ -57,11 +57,28 @@ describe("F2100K post", () => {
   });
 });
 
-describe("GRBL post", () => {
+describe("GRBL post (M3/M5 variant)", () => {
   const r = gcode(grblTable);
   it("matches golden file", () => golden("demo.grbl.nc", r.text));
   it("no G41/G42, relay M03/M05 paired", () => {
     expect(r.text).not.toMatch(/G4[12]/);
     expect(r.warnings.filter((w) => w.includes("≠"))).toEqual([]);
+  });
+  it("surfaces the $32=0 laser-mode reminder", () => {
+    expect(r.warnings.some((w) => /\$32=0/.test(w))).toBe(true);
+  });
+});
+
+describe("GRBL post (M8/M9 variant)", () => {
+  const r = gcode({ ...grblTable, postId: "grbl-m8" });
+  it("matches golden file", () => golden("demo.grbl-m8.nc", r.text));
+  it("emits M08 for pierce and M09 for cut end", () => {
+    expect(r.text).toMatch(/\bM08\b/);
+    expect(r.text).toMatch(/\bM09\b/);
+    expect(r.text).not.toMatch(/\bM03\b/);
+    expect(r.text).not.toMatch(/\bM05\b/);
+  });
+  it("no $32 reminder (M8 is not affected by laser mode)", () => {
+    expect(r.warnings.some((w) => /\$32/.test(w))).toBe(false);
   });
 });

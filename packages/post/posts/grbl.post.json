@@ -15,7 +15,7 @@
   },
   "capabilities": { "compensation": false, "arcs": "IJ-relative" },
   "blocks": {
-    "programStart": ["(ArcFlow - {PROJECT} - {MATERIAL} {THICKNESS}mm {CURRENT}A)", "(requires $32=0 laser mode off)", "G21 G90 G17 G94", { "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
+    "programStart": ["(ArcFlow - {PROJECT} - {MATERIAL} {THICKNESS}mm {CURRENT}A)", "G21 G90 G17 G94", { "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
     "pierce": [
       "G00 X{X} Y{Y}",
       { "when": "heights", "line": "G00 Z{PIERCE_HEIGHT}" },
@@ -35,5 +35,6 @@
     "afterCut": [{ "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
     "programEnd": ["G00 X{X} Y{Y}", "M30"]
   },
-  "checks": { "pairs": [{ "open": "M03", "close": "M05" }] }
+  "checks": { "pairs": [{ "open": "M03", "close": "M05" }] },
+  "reminders": ["GRBL: set $32=0 (laser mode OFF) before cutting — otherwise M3 only fires during moves and pierce will fail."]
 }

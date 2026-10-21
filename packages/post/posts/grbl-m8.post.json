@@ -1,0 +1,39 @@
+{
+  "id": "grbl-m8",
+  "name": "GRBL 1.1 (M8/M9 flood relay)",
+  "controller": "GRBL",
+  "description": "GRBL 1.1 variant where the arc relay is wired to the flood-coolant output (M8/M9) instead of the spindle (M3/M5). M8 is not affected by laser mode, so $32 can stay as-is. Pick this post if your relay board is on the coolant output.",
+  "unverified": ["pierce"],
+  "format": {
+    "decimals": 3,
+    "lineNumbers": false,
+    "extension": ".nc",
+    "newline": "\n",
+    "modalFeed": true,
+    "asciiOnly": true,
+    "splitFullCircles": true
+  },
+  "capabilities": { "compensation": false, "arcs": "IJ-relative" },
+  "blocks": {
+    "programStart": ["(ArcFlow - {PROJECT} - {MATERIAL} {THICKNESS}mm {CURRENT}A)", "G21 G90 G17 G94", { "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
+    "pierce": [
+      "G00 X{X} Y{Y}",
+      { "when": "heights", "line": "G00 Z{PIERCE_HEIGHT}" },
+      "M08",
+      "G04 P{PIERCE_DELAY}",
+      { "when": "heights", "line": "G01 Z{CUT_HEIGHT} F{F_Z}" }
+    ],
+    "thcOn": [],
+    "thcOff": [],
+    "compLeftPrefix": "",
+    "compRightPrefix": "",
+    "compOff": [],
+    "cut": ["G01 X{X} Y{Y} {F}"],
+    "arcCW": ["G02 X{X} Y{Y} I{I} J{J} {F}"],
+    "arcCCW": ["G03 X{X} Y{Y} I{I} J{J} {F}"],
+    "cutEnd": ["M09"],
+    "afterCut": [{ "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
+    "programEnd": ["G00 X{X} Y{Y}", "M30"]
+  },
+  "checks": { "pairs": [{ "open": "M08", "close": "M09" }] }
+}

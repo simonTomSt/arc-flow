@@ -64,4 +64,6 @@ export interface PostDefinition {
   };
   /** Sanity checks run on the generated program (design L3 · SPRAWDZENIE). */
   checks: { pairs: { open: string; close: string }[] };
+  /** Reminders surfaced in the export dialog whenever this post runs (e.g. "GRBL: $32=0 required"). */
+  reminders?: string[];
 }

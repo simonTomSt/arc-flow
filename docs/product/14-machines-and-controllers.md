@@ -41,7 +41,11 @@ Both emit the same wire format and both have produced known-good G-code (`plytka
 4. Remove verified blocks from `unverified` in the JSON, `pnpm golden:update`, review the diff.
 
 ## GRBL 1.1 table (MK2 / MKS DLC32)
-Arc via relay on `M03`/`M05` (alternative `M08`/`M09` — configurable post variant TODO). **Laser mode must be off (`$32=0`)** or M3 only fires during moves. No THC, no IHS (fixed height or touch-off). Pierce delay `G04 P<seconds>`. **GRBL has no G41/G42**, so ArcFlow offsets the geometry by kerf/2 itself (`controllerCompensation: false`). Future: external THC (Arduino THCUD), grblHAL.
+Two post variants, pick by `postId` on the machine profile:
+- **`grbl`** (M3/M5, spindle relay): default. **Laser mode must be off (`$32=0`)** — otherwise M3 only fires while moving and the pierce delay runs with the torch off. The post surfaces this as a reminder in the export dialog on every run.
+- **`grbl-m8`** (M8/M9, flood-coolant relay): for boards where the arc relay is wired to the coolant output. M8 is not affected by laser mode, so `$32` can stay as-is.
+
+No THC, no IHS (fixed height or touch-off). Pierce delay `G04 P<seconds>`. **GRBL has no G41/G42**, so ArcFlow offsets the geometry by kerf/2 itself (`controllerCompensation: false`). Future: external THC (Arduino THCUD), grblHAL.
 
 ## Adding a controller
 New `MachineProfile` template + new post JSON + golden test. Candidates: LinuxCNC/QtPlasmaC, Mach3/4 + THC, grblHAL. Core must only use profile capabilities (`hasTHC`, `controllerCompensation`, `heightsInProgram`, `ihs`, `origin`), never controller names.

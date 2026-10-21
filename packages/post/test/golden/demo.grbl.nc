@@ -1,5 +1,4 @@
 (ArcFlow - Wspornik_WS-02 - S235 4mm 45A)
-(requires $32=0 laser mode off)
 G21 G90 G17 G94
 G00 X34.000 Y284.000
 M03 S1000

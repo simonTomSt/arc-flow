@@ -155,6 +155,7 @@ export function runPost(post: PostDefinition, tp: Toolpath, ctx: PostContext): P
   if (post.unverified.length) warnings.push(`Post "${post.name}" has unverified blocks: ${post.unverified.join(", ")}`);
   if (post.capabilities.compensation !== machine.controllerCompensation)
     warnings.push(`Post compensation (${String(post.capabilities.compensation)}) ≠ machine profile (${String(machine.controllerCompensation)})`);
+  if (post.reminders) warnings.push(...post.reminders);
 
   return { text: lines.join(post.format.newline) + post.format.newline, lines, sources, fileName: fileName(post, ctx.projectName), warnings };
 }
