@@ -29,9 +29,12 @@ export function runPost(post: PostDefinition, tp: Toolpath, ctx: PostContext): P
   const lines: string[] = [];
   const sources: string[] = [];
   const warnings: string[] = [];
+  const sep = post.format.wordSeparator ?? " ";
   const fmt = (x: number) => {
     const s = x.toFixed(post.format.decimals);
-    return s === `-${(0).toFixed(post.format.decimals)}` ? s.slice(1) : s;
+    const zero = (0).toFixed(post.format.decimals);
+    if (s === `-${zero}`) return post.format.forceSign ? `+${zero}` : zero;
+    return post.format.forceSign && !s.startsWith("-") ? `+${s}` : s;
   };
   const toMachine = (p: Vec2): Vec2 =>
     machine.origin === "top-left"
@@ -72,9 +75,12 @@ export function runPost(post: PostDefinition, tp: Toolpath, ctx: PostContext): P
         out = `${prefix} ${out}`;
         prefix = "";
       }
+      // Collapse template whitespace to single spaces, split into words, rejoin with separator.
+      // Preserve comment lines (starting with "(") verbatim — their internal spaces are intentional.
       out = out.replace(/\s+/g, " ").trim();
       if (post.format.asciiOnly) out = toAscii(out);
       if (!out) continue;
+      if (sep !== " " && !out.startsWith("(")) out = out.split(" ").join(sep);
       lines.push(out);
       sources.push(block);
     }
@@ -135,7 +141,7 @@ export function runPost(post: PostDefinition, tp: Toolpath, ctx: PostContext): P
     }
     emit("afterCut", post.blocks.afterCut, { CUT_NO: cutNo });
   });
-  emit("programEnd", post.blocks.programEnd);
+  emit("programEnd", post.blocks.programEnd, { X: fmt(0), Y: fmt(0) });
 
   if (post.format.lineNumbers) {
     const ln = post.format.lineNumbers;

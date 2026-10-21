@@ -1,0 +1,129 @@
+-- Toploong F2100K SheetCam post processor
+-- Adapted by Diego Couvas, 2026
+-- Based on Koike Arnonson plasma cutter post processor
+-- Notes:
+--   G21 metric mode
+--   G90 absolute coordinates
+--   M07 torch ON
+--   M08 torch OFF
+--   M08 forced before every G00 rapid move
+--   Arcs emitted as native G02/G03 with incremental I/J (was ArcAsMoves)
+--   Large-radius arcs (R>200mm) and micro-arcs (chord<0.3mm) → G01 for compatibility
+--   Comments removed for controller compatibility
+--   Output extension: .txt
+-- Test with pen/dry run before plasma cutting
+
+function OnAbout(event)
+   ctrl = event:GetTextCtrl()
+   ctrl:AppendText("Koike Arnonson plasma cutter post processor - Toploong edited\n")
+end
+
+post.ForceExtension("txt")
+
+function OnInit()
+
+   post.SetCommentChars ("()", "[]")
+   post.Text ("(Toploong Koike simple)\n")
+
+   if(scale == metric) then
+      post.Text ("G21\n")
+   else
+      post.Text ("G20\n")
+   end
+
+   post.Text ("G90\n")
+   post.Text ("G40\n")
+   post.Text ("M08\n") -- torch OFF safety
+
+   bigArcs = 0
+   minArcSize = 0.05
+end
+
+
+function OnFinish()
+   post.Text ("M08\n")
+   post.Text ("M02\n")
+end
+
+function OnRapid()
+   if(math.hypot(currentX - endX, currentY - endY) < 0.001) then return end
+
+   post.Text ("M08\n") -- s_curit_ : torche OFF avant tout d_placement rapide
+
+   post.Text ("G00")
+   post.NonModalNumber ("X", endX * scale, "+0.0000")
+   post.NonModalNumber ("Y", endY * scale, "+0.0000")
+   post.Eol()
+end
+
+function OnMove()
+   if(math.hypot(currentX - endX, currentY - endY) < 0.001) then return end
+   post.Text ("G01")
+   post.NonModalNumber ("X", endX * scale, "+0.0000")
+   post.NonModalNumber ("Y", endY * scale, "+0.0000")
+   post.Eol()
+end
+
+function OnArc()
+   -- Large-radius arcs (R > 200mm) are geometrically indistinguishable from
+   -- straight lines on a plasma cut (sagitta < 0.1mm) but can confuse some
+   -- controllers with huge I/J values. Emit as G01 instead.
+   -- Also skip micro-arcs (chord < 0.3mm) - too small to matter.
+   local I = (arcCentreX - currentX) * scale
+   local J = (arcCentreY - currentY) * scale
+   local radius = math.sqrt(I*I + J*J)
+   local chord  = math.sqrt((endX - currentX)^2 + (endY - currentY)^2) * scale
+
+   if radius > 200 or chord < 0.3 then
+      -- Flatten to G01 straight line
+      post.Text ("G01")
+      post.NonModalNumber ("X", endX * scale, "+0.0000")
+      post.NonModalNumber ("Y", endY * scale, "+0.0000")
+      post.Eol()
+      return
+   end
+
+   -- Emit native G02/G03 arc with incremental I/J.
+   -- arcAngle < 0 = clockwise (G02), > 0 = counter-clockwise (G03)
+   if(arcAngle < 0) then
+      post.Text ("G03")
+   else
+      post.Text ("G02")
+   end
+   post.NonModalNumber ("X", endX * scale, "+0.0000")
+   post.NonModalNumber ("Y", endY * scale, "+0.0000")
+   post.NonModalNumber ("I", I, "+0.0000")
+   post.NonModalNumber ("J", J, "+0.0000")
+   post.Eol()
+end
+
+
+function OnPenDown()
+   post.Text("M07\n")
+end
+
+function OnPenUp()
+   post.Text("M08\n")
+end
+
+function OnToolChange()
+end
+
+function OnNewOperation()
+end
+
+function OnComment()
+end
+
+function OnNewPart()
+end
+
+function OnDrill()
+   OnRapid()
+   OnPenDown()
+   endZ = drillZ
+   OnMove()
+   OnPenUp()
+   endZ = safeZ
+   OnRapid()
+end

@@ -2,41 +2,40 @@
   "id": "f2100k",
   "name": "Toploong F2100K",
   "controller": "F2100K",
-  "description": "Fangling F2100K v5.0 (Toploong 1325). Codes taken from the ArcFlow design screens L2/L3/I. MUST be verified against the existing SheetCAM/Fusion .cps post and the Fangling manual before cutting.",
-  "base": "F2100K v2.3",
-  "unverified": ["pierce", "thcOn", "thcOff", "cutEnd", "programEnd", "format.newline", "format.extension"],
+  "description": "Fangling F2100K v5.0 (Toploong 1325). Output matches the format cut daily on the owner's machine via SheetCAM 'Toploong Koike simple' and Autodesk FangLing posts (see docs/reference/). No spaces inside blocks, +sign forced, 4 decimals, .txt. No Z, no F — THC and cut chart live on the controller. G41/G42 not emitted; kerf comp is done in software.",
+  "base": "SheetCAM 'Toploong Koike simple' / Autodesk FangLing F2100K",
+  "unverified": ["thcOn", "thcOff"],
   "format": {
-    "decimals": 2,
+    "decimals": 4,
     "lineNumbers": false,
-    "extension": ".nc",
+    "extension": ".txt",
     "newline": "\r\n",
     "maxFileNameLength": 8,
     "upperCaseFileName": true,
     "modalFeed": true,
     "asciiOnly": true,
-    "splitFullCircles": true
+    "splitFullCircles": true,
+    "wordSeparator": "",
+    "forceSign": true
   },
-  "capabilities": { "compensation": true, "arcs": "IJ-relative" },
+  "capabilities": { "compensation": false, "arcs": "IJ-relative" },
   "blocks": {
-    "programStart": ["(ArcFlow - {MATERIAL} {THICKNESS}mm {CURRENT}A)", "G21 G90"],
+    "programStart": ["G21", "G90", "G40"],
     "pierce": [
       "G00 X{X} Y{Y}",
-      { "when": "heights", "line": "G00 Z{PIERCE_HEIGHT}" },
-      "M07",
-      "G04 P{PIERCE_DELAY}",
-      { "when": "heights", "line": "G01 Z{CUT_HEIGHT} F{F_Z}" }
+      "M07"
     ],
     "thcOn": [{ "when": "thc", "line": "M50" }],
     "thcOff": [],
-    "compLeftPrefix": "G41",
-    "compRightPrefix": "G42",
-    "compOff": ["G40"],
-    "cut": ["G01 X{X} Y{Y} {F}"],
-    "arcCW": ["G02 X{X} Y{Y} I{I} J{J} {F}"],
-    "arcCCW": ["G03 X{X} Y{Y} I{I} J{J} {F}"],
-    "cutEnd": ["M08"],
-    "afterCut": [{ "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
-    "programEnd": ["G00 X0 Y0", "M30"]
+    "compLeftPrefix": "",
+    "compRightPrefix": "",
+    "compOff": [],
+    "cut": ["G01 X{X} Y{Y}"],
+    "arcCW": ["G02 X{X} Y{Y} I{I} J{J}"],
+    "arcCCW": ["G03 X{X} Y{Y} I{I} J{J}"],
+    "cutEnd": ["M08", "M08"],
+    "afterCut": [],
+    "programEnd": ["G00 X{X} Y{Y}", "M02"]
   },
-  "checks": { "pairs": [{ "open": "M07", "close": "M08" }] }
+  "checks": { "pairs": [] }
 }

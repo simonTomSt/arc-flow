@@ -35,6 +35,10 @@ export interface PostDefinition {
     asciiOnly: boolean;
     /** Emit a full circle as two half arcs (not every controller accepts start == end with I/J). */
     splitFullCircles: boolean;
+    /** Separator between words in a block. Default " ". F2100K uses "" (G01X+1.0000Y-2.0000). */
+    wordSeparator?: string;
+    /** Prefix non-negative numbers with "+". F2100K/SheetCAM style. */
+    forceSign?: boolean;
   };
   capabilities: {
     /** Controller does G41/G42. Must match MachineProfile.controllerCompensation. */

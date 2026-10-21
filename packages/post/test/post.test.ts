@@ -20,23 +20,40 @@ function gcode(machine: MachineProfile) {
 
 describe("F2100K post", () => {
   const r = gcode(toploong1325);
-  it("matches golden file", () => golden("demo.f2100k.nc", r.text));
-  it("starts like the design preview", () => {
-    expect(r.lines.slice(0, 2)).toEqual(["(ArcFlow - S235 4mm 45A)", "G21 G90"]);
+  it("matches golden file", () => golden("demo.f2100k.txt", r.text));
+  it("starts with G21/G90/G40 header (matches reference .cps / .scpost)", () => {
+    expect(r.lines.slice(0, 3)).toEqual(["G21", "G90", "G40"]);
   });
-  it("every M07 has its M08 and comp is G41 on the first lead move", () => {
-    expect(r.warnings.filter((w) => w.includes("≠"))).toEqual([]);
-    const i = r.lines.findIndex((l) => l.startsWith("G41"));
-    expect(r.lines[i]).toMatch(/^G41 G0[123] /);
+  it("no G41/G42 — kerf comp is in software", () => {
+    expect(r.text).not.toMatch(/G4[12]/);
+  });
+  it("no spaces, forced sign, 4 decimals in motion blocks", () => {
+    const motion = r.lines.filter((l) => /^G0[0123]/.test(l));
+    expect(motion.length).toBeGreaterThan(0);
+    for (const l of motion) {
+      expect(l).not.toMatch(/\s/);
+      expect(l).toMatch(/^G0[0123](X[+-]\d+\.\d{4})?(Y[+-]\d+\.\d{4})?(I[+-]\d+\.\d{4})?(J[+-]\d+\.\d{4})?$/);
+    }
+  });
+  it("doubled M08 at end of every cut", () => {
+    const idx = r.lines
+      .map((l, i) => (l === "M08" ? i : -1))
+      .filter((i) => i >= 0);
+    // consecutive pairs expected; at least one such pair
+    const hasPair = idx.some((i) => r.lines[i + 1] === "M08");
+    expect(hasPair).toBe(true);
+  });
+  it("ends with M02 (not M30), returning to zero first", () => {
+    expect(r.lines.slice(-2)).toEqual(["G00X+0.0000Y+0.0000", "M02"]);
   });
   it("top-left zero → negative Y", () => {
-    expect(r.lines.find((l) => l.startsWith("G00 X"))).toMatch(/Y-\d/);
+    expect(r.lines.find((l) => /^G00X/.test(l))).toMatch(/Y-\d/);
   });
-  it("flags unverified codes", () => {
+  it("flags unverified codes (THC on/off)", () => {
     expect(r.warnings.some((w) => w.includes("unverified"))).toBe(true);
   });
-  it("file name ≤ 8 chars, upper case", () => {
-    expect(fileName(getPost("f2100k"), "Kołnierze_DN150")).toBe("KOLNIERZ.NC");
+  it("file name ≤ 8 chars, upper case, .txt extension", () => {
+    expect(fileName(getPost("f2100k"), "Kołnierze_DN150")).toBe("KOLNIERZ.TXT");
   });
 });
 

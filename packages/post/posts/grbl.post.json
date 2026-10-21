@@ -33,7 +33,7 @@
     "arcCCW": ["G03 X{X} Y{Y} I{I} J{J} {F}"],
     "cutEnd": ["M05"],
     "afterCut": [{ "when": "heights", "line": "G00 Z{TRAVEL_HEIGHT}" }],
-    "programEnd": ["G00 X0 Y0", "M30"]
+    "programEnd": ["G00 X{X} Y{Y}", "M30"]
   },
   "checks": { "pairs": [{ "open": "M03", "close": "M05" }] }
 }
