@@ -11,11 +11,12 @@ export interface FileFilter {
   extensions: string[];
 }
 
-export async function saveTextFile(defaultName: string, text: string, filters?: FileFilter[]): Promise<string | null> {
+export async function saveTextFile(defaultName: string, text: string, filters?: FileFilter[], defaultDir?: string): Promise<string | null> {
   if (isTauri()) {
     const { save } = await import("@tauri-apps/plugin-dialog");
     const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-    const path = await save({ defaultPath: defaultName, filters: filters ?? [{ name: "G-code", extensions: ["nc", "txt", "tap"] }] });
+    const defaultPath = defaultDir ? joinPath(defaultDir, defaultName) : defaultName;
+    const path = await save({ defaultPath, filters: filters ?? [{ name: "G-code", extensions: ["nc", "txt", "tap"] }] });
     if (!path) return null;
     await writeTextFile(path, text);
     return path;
@@ -27,6 +28,14 @@ export async function saveTextFile(defaultName: string, text: string, filters?: 
   a.click();
   URL.revokeObjectURL(url);
   return defaultName;
+}
+
+/** Join a directory with a filename using the directory's existing separator (handles E:\ on Windows). */
+function joinPath(dir: string, name: string): string {
+  if (!dir) return name;
+  const useBackslash = dir.includes("\\") && !dir.includes("/");
+  const sep = useBackslash ? "\\" : "/";
+  return dir.endsWith("/") || dir.endsWith("\\") ? `${dir}${name}` : `${dir}${sep}${name}`;
 }
 
 export interface OpenedFile {

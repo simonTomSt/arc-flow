@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { blocksExport, type CutChartRow, type Issue, type MachineProfile, type Toolpath } from "@arcflow/core";
-import { getPost, runPost } from "@arcflow/post";
+import { fileName as postFileNameFull, getPost, runPost, type PostDefinition } from "@arcflow/post";
 import { useStore } from "../state/store";
 import { useT, type MessageKey } from "../i18n";
 import { saveTextFile } from "../platform/save";
@@ -22,6 +22,7 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
   const [base, setBase] = useState(defaultBase);
   const [ext, setExt] = useState(post.format.extension);
   const [folder, setFolder] = useState(state.lastExportPath ? dirOf(state.lastExportPath) : "");
+  const [overrideErrors, setOverrideErrors] = useState(false);
 
   const blocked = blocksExport(issues);
   const errors = issues.filter((i) => i.severity === "error").length;
@@ -29,10 +30,13 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
 
   const maxLen = post.format.maxFileNameLength;
   const nameTooLong = maxLen != null && base.length > maxLen;
-  const fileName = (post.format.upperCaseFileName ? base.toUpperCase() : base) + ext;
+  // Final name goes through the post's filename rules (ASCII + uppercase + 8.3), so the user sees exactly what will land on disk.
+  const fileName = postFileName(post, base) + ext;
 
   const fixable = issues.filter((i) => i.fix && (i.fix.code === "MARK_INSTEAD" || i.fix.code === "SHORTEN_LEAD"));
   const kB = (new TextEncoder().encode(res.text).length / 1024).toFixed(1);
+
+  const saveDisabled = (blocked && !overrideErrors) || nameTooLong;
 
   return (
     <div className="modal-back" onClick={() => dispatch({ type: "showExport", show: false })}>
@@ -76,9 +80,20 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
             </label>
             <div className="auto summary">{t("export.summary", { n: res.lines.length, kb: kB })}</div>
           </div>
+          <div className="export-final">
+            <span className="auto">{t("export.finalName")}</span>
+            <code>{fileName}</code>
+            {folder && <code className="dim">· {folder}</code>}
+          </div>
           <div className="export-actions">
             {nameTooLong && <span style={{ color: "var(--warn)" }}>▲ {t("export.nameTooLong", { n: maxLen!, post: post.name })}</span>}
-            {blocked && <span style={{ color: "var(--error)" }}>● {t("export.blocked", { n: errors })}</span>}
+            {blocked && !overrideErrors && <span style={{ color: "var(--error)" }}>● {t("export.blocked", { n: errors })}</span>}
+            {blocked && (
+              <label className="override-check" title={t("export.overrideHint")}>
+                <input type="checkbox" checked={overrideErrors} onChange={(e) => setOverrideErrors(e.target.checked)} />
+                <span>{t("export.override", { n: errors })}</span>
+              </label>
+            )}
             <div className="spacer" style={{ flex: 1 }} />
             <button
               className="btn"
@@ -89,10 +104,15 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
               {fixable.length === 0 ? t("export.fixAll") : t("export.fixAllSome", { n: fixable.length })}
             </button>
             <button className="btn" onClick={() => dispatch({ type: "showExport", show: false })}>{t("action.cancel")}</button>
-            <button className="btn primary" disabled={blocked || nameTooLong} onClick={async () => {
-              const saved = await saveTextFile(fileName, res.text);
-              if (saved) dispatch({ type: "noteExport", path: saved });
-            }}>{t("action.save")}</button>
+            <button
+              className={`btn primary ${blocked && overrideErrors ? "danger-primary" : ""}`}
+              disabled={saveDisabled}
+              onClick={async () => {
+                if (blocked && overrideErrors && !confirm(t("export.overrideConfirm", { n: errors }))) return;
+                const saved = await saveTextFile(fileName, res.text, undefined, folder || undefined);
+                if (saved) dispatch({ type: "noteExport", path: saved });
+              }}
+            >{blocked && overrideErrors ? t("action.saveAnyway") : t("action.save")}</button>
           </div>
         </footer>
       </div>
@@ -102,6 +122,12 @@ export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Apply the post's filename rules (ASCII, 8.3, upper-case) to the user's typed base — minus the extension. */
+function postFileName(post: PostDefinition, base: string): string {
+  const full = postFileNameFull(post, base);
+  return full.slice(0, full.length - post.format.extension.length);
 }
 
 function dirOf(p: string): string {

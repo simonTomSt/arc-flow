@@ -69,7 +69,7 @@ Discoveries during M2 (screen L1 + library storage):
 - [ ] THC off/lock code for small holes; IHS; Pierce Up Time workaround
 - [x] GRBL relay variant M8/M9 (`grbl-m8` post); laser-mode `$32=0` reminder surfaced from the `grbl` post
 - [ ] Post editor UI with block list, variable chips, number format, preview highlighting (`sources`)
-- [ ] Export: folder memory (E:\), 8.3 file names, "Napraw wszystko", conscious override of errors
+- [x] Export: folder memory (seeded into the Tauri save dialog), final 8.3 filename shown inline, "Napraw wszystko", conscious override of errors (checkbox + confirm)
 **Accept:** a sample sheet cut on the Toploong matches the drawing ±0,2 mm, no dross drops at lead-ins.
 
 ## M4 · Editing & assisted mode (screens C, AS, M, T)
