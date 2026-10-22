@@ -100,6 +100,9 @@ export function NozzlesScreen() {
             <button className="tree-row" onClick={openCharts}>
               <span>{t("charts.open")}</span>
             </button>
+            <button className="tree-row" onClick={() => { dispatch({ type: "showNozzles", show: false }); dispatch({ type: "showPosts", show: true }); }}>
+              <span>{t("posts.open")}</span>
+            </button>
           </aside>
           <aside className="machines-list">
             <div className="list-section-head">{t("nozzles.list")}</div>

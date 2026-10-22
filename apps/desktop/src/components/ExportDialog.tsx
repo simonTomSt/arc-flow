@@ -13,7 +13,7 @@ import { saveTextFile } from "../platform/save";
 export function ExportDialog({ issues, toolpath, row, machine }: { issues: Issue[]; toolpath: Toolpath; row: CutChartRow; machine: MachineProfile }) {
   const { state, dispatch } = useStore();
   const t = useT();
-  const post = getPost(machine.postId);
+  const post = getPost(machine.postId, state.posts);
   const res = useMemo(
     () => runPost(post, toolpath, { projectName: state.project.name, preset: state.project.preset, row, machine, sheet: state.project.sheet }),
     [post, toolpath, state.project, row, machine],

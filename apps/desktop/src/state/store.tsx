@@ -32,6 +32,7 @@ import {
   type OperationOverrides,
   type Project,
 } from "@arcflow/core";
+import { builtinPosts, isBuiltinPost, type PostDefinition } from "@arcflow/post";
 
 export type Workspace = "start" | "sketch" | "cam" | "nesting" | "sim" | "export";
 export type Theme = "dark" | "light" | "ultra-dark";
@@ -84,6 +85,10 @@ export interface UiState {
   showMachines: boolean;
   /** Nozzles screen (design L1) is open as an overlay. */
   showNozzles: boolean;
+  /** User-authored posts (design L3). Built-ins live in `@arcflow/post` and are read-only. */
+  posts: PostDefinition[];
+  /** Post editor screen (design L3) is open as an overlay. */
+  showPosts: boolean;
 }
 
 export type Action =
@@ -118,7 +123,11 @@ export type Action =
   | { type: "showNozzles"; show: boolean }
   | { type: "upsertNozzle"; nozzle: Nozzle }
   | { type: "deleteNozzle"; id: string }
-  | { type: "loadNozzles"; library: NozzleLibrary };
+  | { type: "loadNozzles"; library: NozzleLibrary }
+  | { type: "showPosts"; show: boolean }
+  | { type: "upsertPost"; post: PostDefinition }
+  | { type: "deletePost"; id: string }
+  | { type: "loadPosts"; posts: PostDefinition[] };
 
 /** Factory templates for "Nowa z szablonu" (design L2). Not editable. */
 export const machineTemplates: MachineProfile[] = [toploong1325, grblTable];
@@ -272,6 +281,22 @@ function reducer(s: UiState, a: Action): UiState {
     }
     case "loadNozzles":
       return { ...s, nozzles: a.library };
+    case "showPosts":
+      return { ...s, showPosts: a.show };
+    case "upsertPost": {
+      if (isBuiltinPost(a.post.id)) return s; // built-ins are read-only
+      const posts = s.posts.slice();
+      const i = posts.findIndex((p) => p.id === a.post.id);
+      if (i >= 0) posts[i] = a.post;
+      else posts.push(a.post);
+      return { ...s, posts };
+    }
+    case "deletePost": {
+      if (isBuiltinPost(a.id)) return s;
+      return { ...s, posts: s.posts.filter((p) => p.id !== a.id) };
+    }
+    case "loadPosts":
+      return { ...s, posts: a.posts.filter((p) => !isBuiltinPost(p.id)) };
     case "applyFixes": {
       const overrides = { ...s.project.overrides };
       for (const i of a.issues) {
@@ -327,6 +352,8 @@ const initial: UiState = {
   showCharts: false,
   showMachines: false,
   showNozzles: false,
+  posts: [],
+  showPosts: false,
 };
 
 const PERSIST_KEY = "arcflow.ui.v1";
@@ -340,6 +367,7 @@ interface Persisted {
   machines: MachineProfile[];
   nozzles: NozzleLibrary;
   chart: CutChart;
+  posts: PostDefinition[];
 }
 
 function loadPersisted(): Partial<Persisted> {
@@ -356,7 +384,7 @@ function loadPersisted(): Partial<Persisted> {
 
 function savePersisted(s: UiState) {
   if (typeof window === "undefined") return;
-  const v: Persisted = { recent: s.recent, lastExportPath: s.lastExportPath, theme: s.theme, lang: s.lang, touch: s.touch, machines: s.machines, nozzles: s.nozzles, chart: s.chart };
+  const v: Persisted = { recent: s.recent, lastExportPath: s.lastExportPath, theme: s.theme, lang: s.lang, touch: s.touch, machines: s.machines, nozzles: s.nozzles, chart: s.chart, posts: s.posts };
   try {
     window.localStorage.setItem(PERSIST_KEY, JSON.stringify(v));
   } catch {
@@ -390,11 +418,19 @@ export function projectFromArcflow(text: string): Project {
   return parseProject(text);
 }
 
+/** Posts available for selection in the UI — user library first, then built-ins. */
+export function allPosts(s: UiState): PostDefinition[] {
+  const map = new Map<string, PostDefinition>();
+  for (const p of builtinPosts) map.set(p.id, p);
+  for (const p of s.posts) map.set(p.id, p); // user library wins
+  return Array.from(map.values());
+}
+
 const Ctx = createContext<{ state: UiState; dispatch: Dispatch<Action> } | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial, (base) => ({ ...base, ...loadPersisted() }));
-  useEffect(() => savePersisted(state), [state.recent, state.lastExportPath, state.theme, state.lang, state.touch, state.machines, state.nozzles, state.chart]);
+  useEffect(() => savePersisted(state), [state.recent, state.lastExportPath, state.theme, state.lang, state.touch, state.machines, state.nozzles, state.chart, state.posts]);
   // Tauri-only library persistence: load on mount, overwrite file-per-item on change.
   // In the browser these resolve to no-ops and localStorage keeps everything.
   useEffect(() => {
@@ -408,12 +444,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         for (const m of snap.machines) dispatch({ type: "upsertMachine", machine: m });
       }
       if (snap.nozzles) dispatch({ type: "loadNozzles", library: snap.nozzles });
+      if (snap.posts) dispatch({ type: "loadPosts", posts: snap.posts });
     })();
     return () => { cancelled = true; };
   }, []);
   useEffect(() => { void (async () => { (await import("../platform/library")).saveChart(state.chart); })(); }, [state.chart]);
   useEffect(() => { void (async () => { (await import("../platform/library")).saveMachines(state.machines); })(); }, [state.machines]);
   useEffect(() => { void (async () => { (await import("../platform/library")).saveNozzles(state.nozzles); })(); }, [state.nozzles]);
+  useEffect(() => { void (async () => { (await import("../platform/library")).savePosts(state.posts); })(); }, [state.posts]);
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
 }
 

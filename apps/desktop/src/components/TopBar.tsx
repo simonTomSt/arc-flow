@@ -66,6 +66,9 @@ export function TopBar({ blocked }: { blocked: boolean }) {
         <button className="menu-item" onClick={() => dispatch({ type: "showNozzles", show: true })}>
           {t("nozzles.open")}
         </button>
+        <button className="menu-item" onClick={() => dispatch({ type: "showPosts", show: true })}>
+          {t("posts.open")}
+        </button>
         <button
           className="menu-item"
           title={t("library.backup.hint")}

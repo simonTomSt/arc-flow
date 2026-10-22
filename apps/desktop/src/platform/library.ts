@@ -10,6 +10,7 @@
  */
 import type { CutChart, MachineProfile, NozzleLibrary } from "@arcflow/core";
 import { parseCutChart, parseNozzles, serializeCutChart, serializeNozzles } from "@arcflow/core";
+import type { PostDefinition } from "@arcflow/post";
 
 const isTauri = (): boolean => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -17,6 +18,7 @@ export interface LibrarySnapshot {
   chart?: CutChart;
   machines?: MachineProfile[];
   nozzles?: NozzleLibrary;
+  posts?: PostDefinition[];
 }
 
 const LIB_DIR = "arcflow/library";
@@ -54,6 +56,11 @@ export async function loadLibrary(): Promise<LibrarySnapshot> {
     }
     const nozzlesPath = await t.join(dir, "nozzles.json");
     if (await t.exists(nozzlesPath)) snap.nozzles = parseNozzles(await t.readTextFile(nozzlesPath));
+    const postsPath = await t.join(dir, "posts.json");
+    if (await t.exists(postsPath)) {
+      const parsed = JSON.parse(await t.readTextFile(postsPath)) as { format: string; version: number; posts: PostDefinition[] };
+      if (parsed.format === "arcflow-posts" && parsed.version === 1 && Array.isArray(parsed.posts)) snap.posts = parsed.posts;
+    }
     return snap;
   } catch (err) {
     console.warn("library.load failed", err);
@@ -92,6 +99,18 @@ export async function saveNozzles(nozzles: NozzleLibrary): Promise<void> {
     await t.writeTextFile(await t.join(dir, "nozzles.json"), serializeNozzles(nozzles));
   } catch (err) {
     console.warn("library.saveNozzles failed", err);
+  }
+}
+
+export async function savePosts(posts: PostDefinition[]): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    const t = await tauri();
+    const dir = await ensureDir();
+    const text = JSON.stringify({ format: "arcflow-posts", version: 1, posts }, null, 2);
+    await t.writeTextFile(await t.join(dir, "posts.json"), text);
+  } catch (err) {
+    console.warn("library.savePosts failed", err);
   }
 }
 

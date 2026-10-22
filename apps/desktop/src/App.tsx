@@ -15,6 +15,7 @@ import { ProblemsPanel } from "./components/ProblemsPanel";
 import { ChartsScreen } from "./components/ChartsScreen";
 import { MachinesScreen } from "./components/MachinesScreen";
 import { NozzlesScreen } from "./components/NozzlesScreen";
+import { PostsScreen } from "./components/PostsScreen";
 import { CamCanvas } from "./canvas/CamCanvas";
 import { useT } from "./i18n";
 
@@ -105,6 +106,7 @@ export function App() {
       {state.showCharts && <ChartsScreen />}
       {state.showMachines && <MachinesScreen />}
       {state.showNozzles && <NozzlesScreen />}
+      {state.showPosts && <PostsScreen />}
     </div>
   );
 }

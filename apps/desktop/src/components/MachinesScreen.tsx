@@ -1,7 +1,7 @@
 import { useContext, useMemo, useState } from "react";
 import { machinePreviewToolpath, lookupCutChart, type MachineProfile } from "@arcflow/core";
-import { builtinPosts, getPost, runPost } from "@arcflow/post";
-import { machineTemplates, useStore } from "../state/store";
+import { getPost, runPost } from "@arcflow/post";
+import { allPosts, machineTemplates, useStore } from "../state/store";
 import { LangContext, fmtNum, useT } from "../i18n";
 
 /**
@@ -81,6 +81,9 @@ export function MachinesScreen() {
             </button>
             <button className="tree-row" onClick={openCharts}>
               <span>{t("charts.open")}</span>
+            </button>
+            <button className="tree-row" onClick={() => { dispatch({ type: "showMachines", show: false }); dispatch({ type: "showPosts", show: true }); }}>
+              <span>{t("posts.open")}</span>
             </button>
           </aside>
           <aside className="machines-list">
@@ -240,28 +243,31 @@ function EquipmentSection({ machine, onChange }: SectionProps) {
 
 function GcodeSection({ machine, onChange }: SectionProps) {
   const t = useT();
+  const { state, dispatch } = useStore();
+  const posts = allPosts(state);
   return (
     <fieldset className="editor-section">
       <legend>{t("machines.section.gcode")}</legend>
       <label>
         <span>{t("machines.field.post")}</span>
-        <select value={machine.postId} onChange={(e) => onChange({ postId: e.target.value, controller: controllerForPost(e.target.value) })}>
-          {builtinPosts.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+        <span className="pair">
+          <select value={machine.postId} onChange={(e) => onChange({ postId: e.target.value, controller: controllerForPost(e.target.value, posts) })}>
+            {posts.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <button className="btn" onClick={() => { dispatch({ type: "showMachines", show: false }); dispatch({ type: "showPosts", show: true }); }}>
+            {t("posts.open")}
+          </button>
+        </span>
       </label>
     </fieldset>
   );
 }
 
-function controllerForPost(postId: string): MachineProfile["controller"] {
-  const p = builtinPosts.find((x) => x.id === postId);
-  if (!p) return "F2100K";
-  // Mapping is one-to-one for now; later we read it from the post's capabilities.
-  if (postId === "grbl") return "GRBL";
-  if (postId === "f2100k") return "F2100K";
-  return "F2100K";
+function controllerForPost(postId: string, posts: ReturnType<typeof allPosts>): MachineProfile["controller"] {
+  const p = posts.find((x) => x.id === postId);
+  return p?.controller ?? "F2100K";
 }
 
 function PreviewSection({ machine }: { machine: MachineProfile }) {
@@ -269,7 +275,7 @@ function PreviewSection({ machine }: { machine: MachineProfile }) {
   const t = useT();
   const result = useMemo(() => {
     try {
-      const post = getPost(machine.postId);
+      const post = getPost(machine.postId, state.posts);
       const look = lookupCutChart(state.chart, state.project.preset);
       if (!look) return null;
       const tp = machinePreviewToolpath();
